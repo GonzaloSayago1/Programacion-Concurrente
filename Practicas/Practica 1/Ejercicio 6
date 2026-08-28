@@ -1,0 +1,9 @@
+Condiciones para SC
+1_ Exclusión Mutua
+    Si cumple: Par que SC1 entre a su sección crítica, la variable turno debe ser distinta de 2, para que SC2 entre a SC la variable turno debe ser distinta de 1. La variable turno solo puede tener 2 valores(1 o 2), por lo tanto nunca pueden entrar entrar simultaneamente.
+2_ Ausencia de Deadlock
+    Si cumple: No van a intentar acceder al mismo valor al mismo tiempo, entonces nunca se van a bloquear los dos a la vez porque la variable siempre favorece a uno de los dos.
+3_ Ausencia de Demora Innecesaria
+    No cumple: Se puede dar el caso que SC2 haya terminado su SC y cambia el valor de turno a 1, arranca a ejecutarse SC1 termina su SC y cambia el valor de turno a 2, pero SC2 todavia no termino de ejecutar su SNC. SC1 no podra volver a ejecutarse hasta que SC2 termine su SNC, generando demora innecesaria.
+4_ Eventual Entrada
+    No cumple: Si SC2 se queda para siempre en su SNC, no podra volver a poner la variable turno en 1, esto genera que SC1 no pueda volver a ejecutarse.
