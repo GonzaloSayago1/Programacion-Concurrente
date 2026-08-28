@@ -1,0 +1,89 @@
+A) Uso una sola impresora
+
+bool Libre = true;
+
+process persona[0..N-1]
+{
+ //espero que este libre y aviso que la estoy usando
+ <await (libre) libre = false;>
+ Imprimir(documento)
+ //cuando finalizo aviso que la impresora esta libre
+ libre = true;
+}
+
+
+
+B)Modifique la solución de (a) para el caso en que se deba respetar el orden de llegada.
+
+int Siguiente = -1 //-1 representa que esta libre
+queue Q
+
+process persona[id; 0..N-1]
+{
+ //Imprimo en orden FIFO
+ <if (Siguiente == -1)
+   Siguiente = id
+  else
+   push(Q, id);>
+ //Verifico si es mi turno
+ <await (Siguiente == id)>
+ Imprimir(documento)
+ //Aviso que termine
+ <if (empty(Q))
+   Siguiente = -1
+  else
+   Siguiente = pop(Q);>
+}
+
+
+
+C)Modifique la solución de (a) para el caso en que se deba respetar el orden dado por el identificador del proceso (cuando está libre la impresora, de los procesos que hansolicitado su uso la debe usar el que tenga menor identificador).
+
+SortedQueue Q;
+int Siguiente = -1;
+
+process Persona[id; 0..N-1]
+{
+ //Si la impresora esta libre, toma el turno sin importar el orden.
+ <if (Siguiente == -1)
+   Siguiente = id;
+  else
+   PushOrdenado(Q, id);>
+ //Espera su turno
+ <await (Siguiente == id);>
+ Imprimir(documento);
+ //Deja la impresora libre o pasa el turno al que tiene menor ID
+ <if (empty(Q))
+   Siguiente = -1;
+  else
+   siguiente = PopMin(Q);>
+}
+
+D)Modifique la solución de (b) para el caso en que además hay un proceso Coordinador que le indica a cada persona que es su turno de usar la impresora.
+int Actual = -1;
+bool Terminado = false;
+cola Q;
+
+process Persona[id; 0..N-1]
+{
+ //Llega y se pone en la cola
+ <Push(Q, id)>
+
+ //Espera que lo llamen
+ Imprimir(documento)
+
+ //Le avisa al Coordinador que ya terminó de imprimir
+ Terminado = true;
+}
+
+process Coordinador
+{
+ for [i = 1 to N]
+    {
+        // Espera a que haya alguien en la cola y lo saca atómicamente
+        <await (not empty(Q)); Actual = Pop(Q);>
+
+        // Espera a que la persona termine su impresión
+        <await (Terminado); Terminado = false;>
+    }
+}
