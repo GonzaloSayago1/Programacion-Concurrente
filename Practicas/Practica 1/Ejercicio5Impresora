@@ -4,11 +4,7 @@ bool Libre = true;
 
 process persona[0..N-1]
 {
- //espero que este libre y aviso que la estoy usando
- <await (libre) libre = false;>
- Imprimir(documento)
- //cuando finalizo aviso que la impresora esta libre
- libre = true;
+ <Imprimir(documento)>
 }
 
 
@@ -56,7 +52,7 @@ process Persona[id; 0..N-1]
  <if (empty(Q))
    Siguiente = -1;
   else
-   siguiente = PopMin(Q);>
+   siguiente = Pop(Q);>
 }
 
 D)Modifique la solución de (b) para el caso en que además hay un proceso Coordinador que le indica a cada persona que es su turno de usar la impresora.

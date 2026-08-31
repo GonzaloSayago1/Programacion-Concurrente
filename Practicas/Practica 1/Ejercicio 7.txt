@@ -1,0 +1,28 @@
+boolArray espera[1:n] = ([n] false)
+boolArray continuar[1:n] = ([n] false);
+bool listo = false
+
+process Worker[i=1 to n]
+{ while (true)
+  { //antes de sección crítica
+
+  espera[i] = true;
+  while (continuar[i] == false) skip;
+
+  //tareas criticas
+  listo = true
+  //después de sección crítica
+  }
+}
+
+process Coordinador
+{ while (true)
+  { for [i = 1 to n]
+    { if (espera[i] == false) skip;
+      espera[i] = false;
+      continuar[i] = true
+      while (not listo) skip
+      continuar[i] = false
+    }
+  }
+}

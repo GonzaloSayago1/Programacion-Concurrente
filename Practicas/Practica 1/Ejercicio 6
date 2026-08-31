@@ -6,4 +6,4 @@ Condiciones para SC
 3_ Ausencia de Demora Innecesaria
     No cumple: Se puede dar el caso que SC2 haya terminado su SC y cambia el valor de turno a 1, arranca a ejecutarse SC1 termina su SC y cambia el valor de turno a 2, pero SC2 todavia no termino de ejecutar su SNC. SC1 no podra volver a ejecutarse hasta que SC2 termine su SNC, generando demora innecesaria.
 4_ Eventual Entrada
-    No cumple: Si SC2 se queda para siempre en su SNC, no podra volver a poner la variable turno en 1, esto genera que SC1 no pueda volver a ejecutarse.
+    cumple: Cumple porque ambos procesos se van a ejecutar (no tengo en cuenta bucles infinitos)
