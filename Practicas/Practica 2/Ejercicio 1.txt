@@ -1,0 +1,30 @@
+B)
+sem libre = 1
+Process Persona[id:1..n]{
+	P(libre)
+	//pasa
+	V(libre)
+	//entra al avión
+}
+
+
+C)
+sem libre = 3
+Process Persona[id:1..n]{
+	P(libre)
+	//pasa
+	V(libre)
+	//entra al avión
+}
+
+
+D)
+sem libre = 3
+Process Persona[id:1..n]{
+	int cantPasadas = random(20) + 1
+	for int i=1 to cantPasadas
+		P(libre)
+		//pasa
+		V(libre)
+	//entra al avión
+}

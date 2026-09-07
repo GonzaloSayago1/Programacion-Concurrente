@@ -1,0 +1,41 @@
+A)
+fallo=(int id, gravedad);
+arrFallos[n];
+
+Process Proceso [id = 1..4] {
+	for int i=id; i <= n; i = i + 4
+		if arrFallos[i].gravedad == 3 then print arrFallos[i].id
+
+}
+
+
+B)
+fallo=(int id, gravedad);
+arrFallos[n];
+totalFallosGravedad[4] = ([4] 0);
+sem gravedadLibre[4] = ([4] 1);
+
+Process Proceso [id = 1..4] {
+	totalFallosGravedadLocal[4] = ([4] 0);
+	for int i=id; i <= n; i = i + 4
+		fail = arrFallos[i]
+		totalFallosGravedadLocal[fail.id]++
+	for int i=0; i<4; i++
+	P(gravedadLibre[i])
+	totalFallosGravedad[i] += totalFallosGravedadLocal[i]
+	V(gravedadLibre[i])
+}
+
+
+C)
+fallo=(int id, gravedad);
+arrFallos[n];
+totalFallosgravedad[4];
+
+Process Proceso [id = 0..3] {
+	for int i=0; i <= n; i = i + 1 {
+		fail = arrFallos[i]
+		if fail.gravedad == id then
+			totalFallosGravedad[id]++
+	}
+}

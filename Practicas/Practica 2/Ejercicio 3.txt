@@ -1,0 +1,16 @@
+queue recursos[5];
+sem cantidad = 5, mutex = 1;
+
+proccess Proceso[i = 1..P]
+{
+    while(true)
+    {
+        P(cantidad)
+        P(mutex)
+        Pop(recursos)
+        //Usa el recurso
+        Push(recursos)
+        V(mutex)
+        V(cantidad)
+    }
+}
