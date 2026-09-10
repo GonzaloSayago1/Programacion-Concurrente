@@ -1,0 +1,1 @@
+No es la solución más adecuada. Si entran 6 procesos de prioridad alta juntos, solo va a ejecutar 4. Si en el momento que ejecuta los 4 llegan procesos de prioridad baja, no se van a poder ejecutar porque la BD esta "llena", cuando en realidad solo esta ejecutando 4 procesos.
