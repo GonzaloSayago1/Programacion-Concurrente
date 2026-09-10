@@ -1,0 +1,137 @@
+A)
+sem contenedores = N, hayAlgo = 0;
+int libre = 0, ocupado = 0;
+array contenedor[N];
+
+process Preparador
+{
+    while(true)
+    {
+        //Prepara paquete
+        P(contenedores)
+        contenedor[libre] = paquete;
+        libre = (libre + 1) MOD N;
+        V(hayAlgo)
+    }
+}
+
+
+process Entregador
+{
+    resultado = res;
+    while(true)
+    {
+        P(hayAlgo)
+        res = contenedor[ocupado];
+        ocupado = (ocupado + 1) MOD N;
+        v(contenedores)
+        //Entrega paquete
+    }
+}
+
+
+
+B)
+sem contenedores = N, hayAlgo = 0, mutexPreparador = 1;
+int libre = 0, ocupado = 0;
+array contenedor[N];
+
+process Preparador [id: 0...P-1]
+{
+    while(true)
+    {
+        //Prepara paquete
+        P(contenedores)
+        P(mutexPreparador)
+        contenedor[libre] = paquete;
+        libre = (libre + 1) MOD N;
+        V(mutexPreparador)
+        V(hayAlgo)
+    }
+}
+
+
+process Entregador
+{
+    resultado = res;
+    while(true)
+    {
+        P(hayAlgo)
+        res = contenedor[ocupado];
+        ocupado = (ocupado + 1) MOD N;
+        v(contenedores)
+        //Entrega paquete
+    }
+}
+
+
+
+C)
+sem contenedores = N, hayAlgo = 0, mutexEntregador = 1;
+int libre = 0, ocupado = 0;
+array contenedor[N];
+
+process Preparador
+{
+    while(true)
+    {
+        //Prepara paquete
+        P(contenedores)
+        contenedor[libre] = paquete;
+        libre = (libre + 1) MOD N;
+        V(hayAlgo)
+    }
+}
+
+
+process Entregador [id: 0...E-1]
+{
+    resultado = res;
+    while(true)
+    {
+        P(hayAlgo)
+        P(mutexEntregador)
+        res = contenedor[ocupado];
+        ocupado = (ocupado + 1) MOD N;
+        V(mutexEntregador)
+        v(contenedores)
+        //Entrega paquete
+    }
+}
+
+
+
+D)
+sem contenedores = N, hayAlgo = 0, mutexPreparador = 1, mutexEntregador = 1;
+int libre = 0, ocupado = 0;
+array contenedor[N];
+
+process Preparador [id: 0...P-1]
+{
+    while(true)
+    {
+        //Prepara paquete
+        P(contenedores)
+        P(mutexPreparador)
+        contenedor[libre] = paquete;
+        libre = (libre + 1) MOD N;
+        V(mutexPreparador)
+        V(hayAlgo)
+    }
+}
+
+
+process Entregador [id: 0...E-1]
+{
+    resultado = res;
+    while(true)
+    {
+        P(hayAlgo)
+        P(mutexEntregador)
+        res = contenedor[ocupado];
+        ocupado = (ocupado + 1) MOD N;
+        V(mutexPreparador)
+        V(contenedores)
+        //Entrega paquete
+    }
+}
