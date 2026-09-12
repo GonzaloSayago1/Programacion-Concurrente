@@ -1,0 +1,105 @@
+A)
+sem disponible = 1;
+
+process Persona [id: 0..N-1]
+{
+    P(disponible)
+    Imprimir(documento)
+    V(disponible)
+}
+
+
+
+B)
+sem colaDisponible = 1;
+bool impresoraDisponible = true;
+array espera[N] = ([N] 0)
+queue cola;
+
+process Persona [id: 0..N-1]
+int sig;
+{
+    P(colaDisponible)
+
+    if(impresoraDisponible)//Si la impresora esta disponible, libero la cola
+    {
+        impresoraDisponible = false;
+        V(colaDisponible)
+    }
+    else
+    {
+        push(cola, id)
+        V(colaDisponible)
+        P(espera[id])//Espera hasta que lo despierten
+    }
+
+    Imprimir(documento)
+
+    P(colaDisponible)
+    if(empty(cola))
+    {
+        impresoraDisponible = true; //Si no hay nadie esperando por usar la impresora, la libero
+    }
+    else
+    {
+        sig = pop(cola)
+        V(espera[sig])//Despierto al siguiente
+    }
+    V(colaDisponible)
+}
+
+
+
+
+C)
+sem turno[N] = ([N] 0);
+
+process Persona[id: 0..N-1]
+{
+    //El primer proceso con id 0 se ejecuta primero
+    if(id > 0)
+    {
+        P(turno[id])//Espera su turno
+    }
+
+    Imprimir(documento)
+
+    if(id < N-1)
+    {
+        V(turno[id + 1]);
+    }
+}
+
+
+
+
+D)
+sem colaDisponible = 1, hayAlgo = 0, impresoraDisponible = 1;
+array espera[N] = ([N] 0)
+queue cola;
+int sig;
+
+process Persona [id: 0..N-1]
+{
+    P(colaDisponible)
+    Push(cola, id)
+    V(colaDisponible)
+    V(hayAlgo)
+    P(espera[id])//Espera que lo despierten
+    Imprimir(Documento)
+    V(impresoraDisponible)
+
+}
+
+process Coordinador
+{
+    while(true)
+    {
+        P(hayAlgo)
+        P(colaDisponible)
+        sig = pop(cola)
+        V(colaDisponible)
+        P(impresoraDisponible)
+        V(espera[sig])
+    }
+}
