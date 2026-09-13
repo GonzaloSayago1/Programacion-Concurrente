@@ -4,6 +4,7 @@ sem avisarProfesor = 0;
 sem mutexCant = 1;
 sem barrera[10] = ([10] = 0);
 sem esperarCompañeros = 0;
+sem profesorInicia = 0;
 int puntajes[10] = ([10] = 0);
 cola avisos;
 int M = N/5;
