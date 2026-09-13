@@ -1,0 +1,75 @@
+sem mutex = 1;
+sem mutextarea = 1;
+sem avisarProfesor = 0;
+sem mutexCant = 1;
+sem barrera[10] = ([10] = 0);
+sem esperarCompañeros = 0;
+int puntajes[10] = ([10] = 0);
+cola avisos;
+int M = N/5;
+int N = 50;
+int cant = 0;
+
+process Alumno [id: 0..N-1]
+{
+    //Asigno tarea
+    P(mutexTarea)
+    int tarea = elegir();
+    V(mutexTarea)
+
+    Barrera de inicio (el último despierta al profesor)
+    P(mutexCant);
+    cant++;
+    if (cant == N) {
+        V(profesorInicia);
+    }
+    V(mutexCant);
+
+    P(esperarCompañeros)
+
+    //Realiza tarea y avisa al profesor
+
+    P(mutex)
+    Push(avisos, tarea)
+    V(mutex)
+    V(avisarProfesor)//Avisa al profesor que termino su tarea
+
+    //Espero mi puntaje
+    P(barrera[tarea])
+}
+
+process Profesor
+{
+    int contador[10] = ([10] = 0)
+    int puntajesRealizados = 0;
+
+    //Espera que todos los alumnos reciban su tarea para despertarse
+    P(profesorInicia);
+
+    //Aviso a los alumnos que ya pueden arrancar con sus tareas
+    for i: 1 to N
+    {
+        V(esperarCompañeros)
+    }
+
+    //Corrige tareas
+    while(puntajesRealizados < M)
+    {
+        P(avisarProfesor)
+        P(mutex)
+        int tarea = pop(avisos);
+        V(mutex)
+        contador[tarea]++;
+
+        // Si el grupo se completó
+        if(contador[tarea] == 5)
+        {
+            puntajesRealizados++;
+            puntajes[tarea] = puntajesRealizados;
+            for i: 1 to 5
+            {
+                V(barrera[tarea])
+            }
+        }
+    }
+}
