@@ -74,32 +74,102 @@ process Persona[id: 0..N-1]
 
 
 D)
-sem colaDisponible = 1, hayAlgo = 0, impresoraDisponible = 1;
-array espera[N] = ([N] 0)
-queue cola;
-int sig;
+sem colaDisponible = 1;
+sem hayAlgo = 0;
+sem impresoraDisponible = 1;
+sem espera[N] = ([N] 0);
+cola C;
 
 process Persona [id: 0..N-1]
 {
-    P(colaDisponible)
-    Push(cola, id)
-    V(colaDisponible)
-    V(hayAlgo)
-    P(espera[id])//Espera que lo despierten
-    Imprimir(Documento)
-    V(impresoraDisponible)
+    // Llega y se encola de forma protegida
+    P(colaDisponible);
+    push(C, id);
+    V(colaDisponible);
+    V(hayAlgo); // Avisa al coordinador que llegó alguien
 
+    // Espera a que el coordinador le ceda el turno
+    P(espera[id]);
+
+    // Usa la impresora
+    Imprimir(documento);
+
+    // Libera el recurso de impresión
+    V(impresoraDisponible);
 }
 
 process Coordinador
 {
-    while(true)
+    int sig;
+
+    for [i = 0 to N-1]
+    {
+        P(hayAlgo); // Espera a que haya alguien en la cola
+
+        P(colaDisponible);
+        pop(C, sig);
+        V(colaDisponible);
+
+        P(impresoraDisponible); // Espera a que la impresora esté desocupada
+        V(espera[sig]); // Despierta a la persona correspondiente
+    }
+}
+
+
+
+E)
+sem colaDisponible = 1, hayAlgo = 0, espera[N] = ([N] = 0);
+//Control de impresoras
+sem mutexImpresoras = 1, cantImpresoras = 5;
+cola impresorasLibres, colaLLegada;
+int impresoraAsignada[N];
+
+process Persona [id: 0..N-1]
+{
+    //Llega y se encola
+    P(colaDisponible)
+    Push(colaLlegada, id)
+    V(colaDisponible)
+    V(hayAlgo) //Avisa que llego
+
+    //Espera que lo despierten
+    P(espera[id])
+
+    //Ve que impresora le fue asignada y la usa
+    int miImpresora = impresoraAsignada[id]
+    Imprimir(documento, miImpresora)
+
+    //Libera la impresora que usó
+    P(mutexImpresoras)
+    Push(impresorasLibres, miImpresora)
+    V(mutexImpresoras)
+
+    V(cantImpresoras) //Avisa que hay una impresora libre más
+}
+
+process Coordinador
+{
+    int sig, idImpresora;
+
+    for [i = 0 to N-1]
     {
         P(hayAlgo)
+        P(cantImpresoras)
+
+        //Saca persona de la cola
         P(colaDisponible)
-        sig = pop(cola)
+        sig = Pop(colaLlegada)
         V(colaDisponible)
-        P(impresoraDisponible)
+
+        //Saca impresora libre
+        P(mutexImpresoras)
+        idImpresora = Pop(impresorasLibres)
+        V(mutexImpresoras)
+
+        //Asigna a la siguiente persona la impresora que debe usar
+        impresoraAsignada[sig] = idImpresora
+
+        //Despierta a la siguiente persona
         V(espera[sig])
     }
 }
