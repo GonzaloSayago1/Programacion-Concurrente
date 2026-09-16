@@ -1,0 +1,148 @@
+a)
+Monitor impresora
+	cond cola
+	int cant = 0
+
+	procedure imprimir(){
+        //Imprime
+	}
+
+end impresora
+
+process persona{
+	impresora.imprimir()
+}
+
+b)
+Monitor impresora
+	cond turno
+	boolean libre = true
+	int espera
+
+	procedure acceder(){
+        if (libre)
+            {libre = false}
+        else{
+           espera++
+            wait(turno)
+        }
+	}
+
+	procedure terminar(){
+        if (espera > 0){
+            espera--;
+            signal(turno)
+        }
+        else
+            libre = true
+	}
+
+end impresora
+
+process persona{
+	impresora.acceder()
+	//Imprime
+	impresora.terminar()
+}
+
+c)
+Monitor impresora
+	cond turno[n]
+	boolean libre = true
+	queue cola
+
+	procedure acceder(int id, edad){
+        if (libre){
+            libre = false
+        }
+        else{
+            cola.insertarOrdenadoDescendente(id, edad)
+            wait(turno[id])
+        }
+	}
+
+	procedure terminar(){
+        if (cola.isEmpty())
+            libre = true;
+        else{
+            siguiente = cola.pop(id)
+            signal(turno[siguiente])
+        }
+	}
+
+end impresora
+
+process persona{
+	impresora.acceder(id, edad)
+	//Imprime
+	impresora.terminar()
+}
+
+d) Monitor impresora
+	cond turno[n]
+	boolean libre = true
+	queue cola
+
+	procedure acceder(int id){
+        if (libre)
+            libre = false
+        else{
+            cola.insertarOrdenadoAscendente(id)
+            wait(turno[id])
+        }
+	}
+
+	procedure terminar(){
+        if (cola.isEmpty())
+            libre = true;
+        else{
+            siguiente = cola.pop(id)
+            signal(turno[siguiente])
+        }
+	}
+
+end impresora
+
+process persona{
+	impresora.acceder(id)
+	//Imprime
+	impresora.terminar()
+}
+
+e)
+Monitor impresora {
+    int esperando = 0;
+    cond pasarAImpresora;
+    con personaEsperando;
+    con terminoDeImprimir;
+
+    Procedure Llegada(){
+        esperando ++;
+        signal(persoanaEsperando);
+        wait (pasarAImpresora);
+    }
+
+    Procedure Próximo(){
+        if(esperando == 0) {wait(personaEsperando)}
+        esperando --;
+        signal(pasarAImpresora);
+        wait(terminoDeImprimir)
+    }
+
+    Procedure LiberarFotocopiadora(){
+        signal(terminoDeImprimir);
+    }
+}
+end impresora
+
+process persona[id:0..N-1]{
+    impresora.Llegada()
+    imprimir();
+    impresora.LiberarFotocopiadora();
+}
+
+process empleado {
+    while(true){
+        impresora.Proximo();
+    }
+}

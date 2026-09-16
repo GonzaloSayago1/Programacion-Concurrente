@@ -1,0 +1,53 @@
+int E = 10, T = 10;
+sem llegaron = 0;
+int cant = 0;
+sem mutexCant = 1;
+sem empezar = 0;
+sem sem_T = 1
+sem tareas = T;
+int contadorPiezas[E] = ([E] 0)
+int termino = 0;
+sem mutexTermino = 1;
+sem terminaron = 0;
+
+process Empleado [id: 0..E-1]
+{
+    P(mutexCant)
+    cant++
+    V(mutexCant)
+    if(cant == E){
+        V(llegaron)
+    }
+    boolean tengoTarea = false, termine = false
+    P(empezar)
+    while(not termine)
+    {
+        P(sem_T)
+        if (T > 0) then T--; tengoTarea = true
+        else termine = true
+        V(sem_T)
+        if (tengoTarea) then
+        {
+            //hace tarea;
+            contadorPiezas[id]++;
+            tengoTarea = false
+        }
+    }
+    P(mutexTermino)
+    termino++
+    V(mutexTermino)
+    if(termino == E){
+        V(terminaron)
+    }
+}
+
+process Fabrica {
+    P(llegaron)
+    for i : 1 to E
+    {
+        V(empezar)
+    }
+    P(terminaron)
+    int máximo = PosMax(contadorPiezas);
+    print(maximo);
+}

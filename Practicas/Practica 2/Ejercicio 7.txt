@@ -1,4 +1,4 @@
-sem mutex = 1;
+sem mutexCola = 1;
 sem mutextarea = 1;
 sem avisarProfesor = 0;
 sem mutexCant = 1;
@@ -30,9 +30,9 @@ process Alumno [id: 0..N-1]
 
     //Realiza tarea y avisa al profesor
 
-    P(mutex)
+    P(mutexCola)
     Push(avisos, tarea)
-    V(mutex)
+    V(mutexCola)
     V(avisarProfesor)//Avisa al profesor que termino su tarea
 
     //Espero mi puntaje
@@ -57,9 +57,9 @@ process Profesor
     while(puntajesRealizados < M)
     {
         P(avisarProfesor)
-        P(mutex)
+        P(mutexCola)
         int tarea = pop(avisos);
-        V(mutex)
+        V(mutexCola)
         contador[tarea]++;
 
         // Si el grupo se completó

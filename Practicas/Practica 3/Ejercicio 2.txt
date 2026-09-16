@@ -1,0 +1,22 @@
+b)
+Monitor Motor
+	int limite = 5
+	int cant = 0
+	cond cola
+
+	procedure acceder(){
+	while (cant = limite) {
+        wait(cola)
+        cant++
+	}
+
+	procedure terminar(){
+        cant--
+	}
+End Monitor
+
+process proceso[1..n]{
+	Monitor.acceder()
+	//Lee BD
+	Monitor.terminar()
+}
