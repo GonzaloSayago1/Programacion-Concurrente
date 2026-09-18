@@ -113,8 +113,8 @@ e)
 Monitor impresora {
     int esperando = 0;
     cond pasarAImpresora;
-    con personaEsperando;
-    con terminoDeImprimir;
+    cond personaEsperando;
+    cond terminoDeImprimir;
 
     Procedure Llegada(){
         esperando ++;

@@ -1,0 +1,51 @@
+sem cantMarcos = 30, mutexMarcos = 1, hayMarcos = 0;
+queue marcos;
+sem cantVidrios = 50, mutexVidrios = 1, hayVidrios = 0;
+queue vidrios;
+
+process Carpintero [id: 0..3]{
+	while(true){
+		recurso m;
+		P(cantMarcos) //mientras haya capacidad de marcos
+		m = producirMarco(); //Simula produccion
+		P(mutexMarcos) //Bloquea la cola de marcos
+		push(marcos, m);
+		V(mutexMarcos) //Libera cola de marcos
+		V(hayMarcos) //Avisa que hay marcos
+	}
+}
+
+process Vidriero{
+	while(true){
+		recurso v;
+		P(cantVidrios)
+		v = producirVidrio();
+		P(mutexVidrios) //Bloquea cola de vidrios
+		push(vidrios, v)
+		V(mutexVidrios) //Libera cola de vidrios
+		V(hayVidrios) //Avisa que hay vidrios
+	}
+}
+
+process Armador [id: 0..1]{
+	while(true){
+		Recurso ventana, marco, vidrio;
+
+		//Toma marco primero
+		P(hayMarcos)
+		P(mutexMarcos)
+		pop(marcos) //Toma un marco del deposito
+		V(mutexMarcos)
+		V(cantMarcos) //Avisa que tomo un marco
+
+		//Toma vidrio después
+		P(hayVidrios)
+		P(mutexVidrios)
+		pop(vidrios) //Toma un vidrio del deposito
+		V(mutexVidrios)
+		V(cantVidrios)
+
+		//Arma ventana
+		ventana = armarVentana(marco, vidrio);
+	}
+}

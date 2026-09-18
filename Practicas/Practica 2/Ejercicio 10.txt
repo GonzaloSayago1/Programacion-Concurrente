@@ -1,0 +1,101 @@
+A)
+const TRIGO = 0;
+const MAIZ = 1;
+const LLEGADA = 0;
+const SALIDA = 1;
+
+sem mutexEventos = 1;
+sem semCoordinador = 0;
+sem esperaT[T] = ([T] 0);
+sem esperaM[M] = ([M] 0);
+
+// La cola compartida guarda el evento, tipo de camión y su ID
+cola colaEventos;
+
+process Trigo [id: 0..T-1]
+{
+    //Avisa Llegada
+    P(mutexEventos);
+    push(colaEventos, (LLEGADA, TRIGO, id));
+    V(mutexEventos);
+    V(semCoordinador); // Despierta al coordinador
+
+    //Espera que lo despierten
+    P(esperaT[id]);
+
+    //Descarga
+
+    //Avisa que termino
+    P(mutexEventos)
+    push(colaEventos, (LLEGADA, TRIGO, id));
+    V(mutexEventos)
+    V(semCoordinador) //Despierta al coordinador
+}
+
+process Maiz [id: 0..M]{
+		//Avisa que llego
+		P(mutexPos)
+		array[pos] = regM;
+		pos++; //Incremento posicion
+		V(mutexPos)
+		V(hayCamiones) //Avisa que esta esperando
+		P(esperandoM[id]) //Duerme en su posición y espera que lo despierten
+
+		//Descarga
+		V(lugaresDisponibles) //Libera el lugar
+}
+
+process coordinador{
+    int descargandoT = 0;
+    int descargandoM = 0;
+    queue colaEspera; //Cola circular
+    int evento, tipo, id;
+
+    //Cada camion genera una llegada y una salida
+    int totalEventos = (T + M) * 2;
+
+    for i: 1 to totalEventos{
+        P(semCoordinador)
+        P(mutexEventos)
+        (evento, tipo, id) = pop(colaEventos); //Guarda en un registro
+        V(mutexEventos)
+
+        if (evento == LLEGADA){
+            push(colaEspera, (tipo, id)) //Almaceno el camion que llego en la cola de espera interna
+        }
+        else { //Representa salida
+            if (tipo == TRIGO){
+                descargandoT--;
+            }
+            else{
+                descargandoM--;
+            }
+        }
+
+        //Revisa la cola circular
+        int cantEsperando = colaEspera.size();
+
+        for j: 1 to cantEsperando{
+            (tipo, id) = pop(colaEspera);
+            bool puedePasar = false;
+
+            //Verifica que no haya más de 5 del mismo tipo descargando y haya lugar para descargar
+            if (tipo == TRIGO && descargandoT < 5 && (descargandoT + descargandoM) < 7){
+                descargandoT; //Avisa que hay uno más descargando
+                V(esperaT[id]); //Despierta al camion correspondiente
+                puedePasar = true; //Avisa que paso
+            }
+            else if (tipo == MAIZ && descargandoM < 5 && (descargandoT + descargandoM) < 7) {
+                descargandoM++;
+                V(esperaM[id]);
+                puedePasar = true;
+            }
+
+            //Si no cuemplio las condiciones, vueve al fondo de la cola
+            if (!puedePasar){
+                push(colaEspera, (tipo, id));
+            }
+        }
+    }
+
+}
