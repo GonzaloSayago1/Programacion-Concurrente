@@ -32,17 +32,21 @@ process Trigo [id: 0..T-1]
     V(semCoordinador) //Despierta al coordinador
 }
 
-process Maiz [id: 0..M]{
-		//Avisa que llego
-		P(mutexPos)
-		array[pos] = regM;
-		pos++; //Incremento posicion
-		V(mutexPos)
-		V(hayCamiones) //Avisa que esta esperando
-		P(esperandoM[id]) //Duerme en su posición y espera que lo despierten
+process Maiz [id: 0..M-1]{
+    //Avisa que llego
+    P(mutexEventos);
+    push(colaEventos, (LLEGADA, MAIZ, id));
+    V(mutexEventos);
+    V(semCoordinador);
 
-		//Descarga
-		V(lugaresDisponibles) //Libera el lugar
+    P(esperaM[id]);
+
+    // Descarga
+
+    P(mutexEventos);
+    push(colaEventos, (SALIDA, MAIZ, id));
+    V(mutexEventos);
+    V(semCoordinador);
 }
 
 process coordinador{
@@ -98,4 +102,36 @@ process coordinador{
         }
     }
 
+}
+
+
+
+
+B)
+sem lugaresTotales = 7;
+sem cupoTrigo = 5;
+sem cupoMaiz = 5;
+
+process CamionTrigo [id: 0..T-1]
+{
+    P(lugaresTotales);
+    P(cupoTrigo);
+
+    //Descarga
+
+    // Libera el lugar
+    V(cupoTrigo);
+    V(lugaresTotales);
+}
+
+process CamionMaiz [id: 0..M-1]
+{
+    P(lugaresTotales);
+    P(cupoMaiz);
+
+    // Descarga
+
+    // Libera los recursos adquiridos
+    V(cupoMaiz);
+    V(lugaresTotales);
 }
