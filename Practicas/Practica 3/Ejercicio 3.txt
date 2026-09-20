@@ -1,15 +1,13 @@
 a)
 Monitor impresora
-	cond cola
-	int cant = 0
 
 	procedure imprimir(){
-        //Imprime
+        Fotocopiar();
 	}
 
 end impresora
 
-process persona{
+process persona [id: 0..N-1]{
 	impresora.imprimir()
 }
 
@@ -17,7 +15,7 @@ b)
 Monitor impresora
 	cond turno
 	boolean libre = true
-	int espera
+	int espera = 0;
 
 	procedure acceder(){
         if (libre)
@@ -39,73 +37,68 @@ Monitor impresora
 
 end impresora
 
-process persona{
+process persona [id: 0..N-1]{
 	impresora.acceder()
-	//Imprime
+	Fotocopiar();
 	impresora.terminar()
 }
 
 c)
 Monitor impresora
-	cond turno[n]
+	cond turno[N]
 	boolean libre = true
-	queue cola
+	colaOrdenada cola;
+	int esperando = 0, siguiente;
 
 	procedure acceder(int id, edad){
         if (libre){
             libre = false
         }
         else{
-            cola.insertarOrdenadoDescendente(id, edad)
-            wait(turno[id])
+            cola.insertarOrdenadoDescendente(id, edad);
+            esperando++;
+            wait(turno[id]);
         }
 	}
 
 	procedure terminar(){
-        if (cola.isEmpty())
-            libre = true;
-        else{
-            siguiente = cola.pop(id)
+        if (esperando > 0)
+            sacar(cola, siguiente) //Saco el primero de la cola y lo guardo en "siguiente"
             signal(turno[siguiente])
+        else{
+            libre = true;
         }
 	}
 
 end impresora
 
-process persona{
+process persona [id: 0..N-1]{
+    int edad;
 	impresora.acceder(id, edad)
-	//Imprime
+	Fotocopiar();
 	impresora.terminar()
 }
 
 d) Monitor impresora
-	cond turno[n]
-	boolean libre = true
-	queue cola
+	cond turno[N]
+	queue cola;
+	siguiente = 0;
 
-	procedure acceder(int id){
-        if (libre)
-            libre = false
-        else{
-            cola.insertarOrdenadoAscendente(id)
-            wait(turno[id])
-        }
+	procedure acceder(id: in int){
+        if (siguiente != id)
+            wait(turno[id]);
 	}
 
 	procedure terminar(){
-        if (cola.isEmpty())
-            libre = true;
-        else{
-            siguiente = cola.pop(id)
-            signal(turno[siguiente])
-        }
+        siguiente++;
+        signal(turno[siguiente]);
 	}
 
 end impresora
 
-process persona{
+process persona [id: 0..N-1]{
 	impresora.acceder(id)
-	//Imprime
+	Fotocopiar();
 	impresora.terminar()
 }
 
@@ -113,17 +106,19 @@ e)
 Monitor impresora {
     int esperando = 0;
     cond pasarAImpresora;
-    cond personaEsperando;
+    cond hayPersonas;
     cond terminoDeImprimir;
 
-    Procedure Llegada(){
-        esperando ++;
-        signal(persoanaEsperando);
+    Procedure solicitarTurno(){
+        esperando++;
+        signal(hayPersonas);
         wait (pasarAImpresora);
     }
 
-    Procedure Próximo(){
-        if(esperando == 0) {wait(personaEsperando)}
+    Procedure llamarSiguiente(){
+        if(esperando == 0) {
+            wait(hayPersonas); //Si no hay nadie, el empleado espera
+        }
         esperando --;
         signal(pasarAImpresora);
         wait(terminoDeImprimir)
@@ -136,13 +131,85 @@ Monitor impresora {
 end impresora
 
 process persona[id:0..N-1]{
-    impresora.Llegada()
-    imprimir();
+    impresora.solicitarTurno();
+    Fotocopiar();
     impresora.LiberarFotocopiadora();
 }
 
 process empleado {
-    while(true){
-        impresora.Proximo();
+    for i: 0 to N-1{
+        impresora.llamarSiguiente();
     }
 }
+
+
+
+f)
+Monitor administradorFotocopias
+{
+    int esperando = 0;
+    int libre = 10;
+    cola maquinasLibres; // Asumo que se inicializa con IDs{0..9}
+
+    cond hayTrabajo;
+    cond esperaTurno;
+    cond esperaDato;
+
+    int maquinaAsignada; //Variable temporal para dato
+
+    procedure solicitarTurno(mi_maq: out int)
+    {
+        esperando++;
+        signal(hayTrabajo);
+        wait(esperaTurno);
+
+        //Cuando la persona despierta, lee el dato y le avisa al empleado
+        mi_maq = maquinaAsignada;
+        signal(esperaDato); //Avisa que leyo dato para que el empleado pueda seguir asignando turnos
+    }
+
+    procedure llamarSiguiente()
+    {
+        if(esperando == 0 || libre == 0)
+            wait(hayTrabajo);
+        esperando--;
+        libre--;
+        int sig;
+        pop(maquinasLibres, sig); //Saca fotocopiadora libre
+
+        //Deja el dato y espera que la persona lo lea
+        maquinaAsignada = sig;
+        signal(esperaTurno); //Despierta persona
+        wait(esperaDato) //Espera que la persona lea el dato
+    }
+
+    procedure notificarFin(mi_maq: in int)
+    {
+        push(maquinasLibres, mi_maq);
+        libres++;
+        signal(hayTrabajo); // Avisa al empleado que hay una maquina libre
+    }
+}
+
+process persona [id: 0..N-1]
+{
+    int fotocopiadora;
+    administradorFotocopias.solicitarTurno(fotocopiadora);
+    Fotocopiar(fotocopiadora);
+    administradorFotocopias.notificarFin(fotocopiadora);
+}
+
+process Empleado
+{
+    for i: 0 to N-1
+    {
+        administradorFotocopias.llamarSiguiente();
+    }
+}
+
+
+
+
+
+
+

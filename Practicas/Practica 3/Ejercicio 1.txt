@@ -1,9 +1,11 @@
 a) Funciona. El valor de cant no puede ser menor a 0 ni mayor a 1 y se respeta
 que solo haya 1 auto a la vez en el puente.
+
 b) sem puente=1
 Process Auto [a:1..M]
  P(puente)
  “el auto cruza el puente”
  V(puente)
 End Process;
+
 c) Ninguna de las 2 lo respeta.
