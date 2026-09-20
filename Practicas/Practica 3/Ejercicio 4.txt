@@ -1,0 +1,41 @@
+Monitor puente
+{
+    int pesoRestante = 50000;
+    queue colaPesos;
+    cond espera;
+
+    procedure solicitarAcceso(peso: in int)
+    {
+        if(not empty(colaPesos) || peso > pesoRestante)
+        {
+            push(colaPesos, peso);
+            wait(espera);
+        }
+        else
+        {
+            pesoRestante -= peso;
+        }
+    }
+
+    procedure informarFin(peso: in int)
+    {
+        pesoRestante += peso;
+        while (not empty(colaPesos) && verPrimero(colaPesos) <= pesoRestante)
+        {
+            int pesoSig;
+            pop(colaPesos, pesoSig);
+            pesoRestante -= pesoSig; //Reserva lugar antes de despertarlo
+            signal(espera); //Despierta por orden de llegada
+        }
+    }
+}
+
+process vehiculo [0..N-1]
+{
+    int peso;
+    puente.solicitarAcceso(peso);
+    //Pasando puente
+    puente.informarFin(peso);
+}
+
+
