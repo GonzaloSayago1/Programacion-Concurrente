@@ -1,0 +1,314 @@
+A)
+Monitor corralon
+{
+    int esperando = 0;
+    cond colaClientes;
+    bool libre = true;
+
+    procedure solicitarAtencion()
+    {
+        if(libre)
+        {
+            libre = false; //pasa y avisa que el empleado esta ocupado
+        }
+        else //Hace la fila
+        {
+            esperando++;
+            wait(colaClientes);
+        }
+    }
+
+    procedure notificarSalida()
+    {
+        if(esperando > 0)
+        {
+            esperando--;
+            signal(colaClientes) //Avisa que pase el siguiente
+        }
+        else
+        {
+            libre = true; //Libera al empleado
+        }
+    }
+}
+
+Monitor Caja
+{
+    text listaAux, comprobanteAux;
+    bool hayLista = false;
+    cond esperaEmpleado, esperaComprobante, comprobanteRecibido;
+
+    procedure solicitarCompra(lista: in text, res: out text)
+    {
+        listaAux = lista;
+        hayLista = true; //Variable de control
+        signal(esperaEmpleado);
+        wait(esperaComprobante);
+        res = comprobanteAux;
+        signal(comprobanteRecibido); // Confirma que ya leyó el comprobante
+    }
+
+    procedure recibirLista(lista: out text)
+    {
+        if (not hayLista) {
+            wait(esperaEmpleado);
+        }
+        lista = listaAux;
+        hayLista = false; //Resetea variable de control
+    }
+
+    procedure darComprobante(comprobante: in text)
+    {
+        comprobanteAux = comprobante;
+        signal(esperaComprobante);
+        wait(comprobanteRecibido);   // Espera que el cliente tome el comprobante
+    }
+}
+
+process Pesona[id: 0..N-1]
+{
+    text lista, comprobante;
+    corralon.solicitarAtencion();
+    caja.solicitarCompra(lista, comprobante);
+    corralon.notificarSalida();
+}
+
+process Empleado
+{
+    text comprobante, listaCliente;
+    for i: 0 to N-1
+    {
+        caja.recibirLista(listaCLiente);
+        //Emite comprobante
+        caja.darComprobante(comprobante);
+    }
+}
+
+
+
+B)
+Monitor corralon
+{
+    cola cajasLibres;
+    cond esperaCaja;
+    int esperando = 0, cantCajas = 0;
+
+    procedure llegada(id: out int)
+    {
+        if(cantCajas == 0)
+        {
+            esperando++;
+            wait(esperaCaja);
+        }
+        else
+            cantCajas--;
+        pop(cajasLibres, id); //Guarda una caja libre en la viariable id
+    }
+
+    procedure proximo(id: in int)
+    {
+        push(cajasLibres , id); //Llega y encola id de caja disponible
+        if(esperando > 0)
+        {
+            esperando--;
+            signal(esperaCaja); //Despierta al siguiente de la cola
+        }
+        else
+            cantCajas++;
+    }
+}
+
+Monitor caja[id: 0..E-1]
+{
+    text listaAux, comprobanteAux;
+    bool hayLista = false;
+    cond esperaEmpleado, esperaComprobante, comprobanteRecibido;
+
+    procedure solicitarCompra(lista: in text, res: out text)
+    {
+        listaAux = lista;
+        hayLista = true; //Variable de control
+        signal(esperaEmpleado);
+        wait(esperaComprobante);
+        res = comprobanteAux;
+        signal(comprobanteRecibido); // Confirma que ya leyó el comprobante
+    }
+
+    procedure recibirLista(lista: out text)
+    {
+        if (not hayLista) {
+            wait(esperaEmpleado);
+        }
+        lista = listaAux;
+        hayLista = false; //Resetea variable de control
+    }
+
+    procedure darComprobante(comprobante: in text)
+    {
+        comprobanteAux = comprobante;
+        signal(esperaComprobante);
+        wait(comprobanteRecibido);   // Espera que el cliente tome el comprobante
+    }
+}
+
+process persona[id: 0..N-1]
+{
+    int idCaja;
+    text lista, comprobante;
+
+    corralon.llegada(idCaja);
+    caja[idCaja].solicitarCompra(lista, comprobante);
+}
+
+process empleado[id: 0..E-1]
+{
+    text listaCliente, comprobante;
+
+    while(true)
+    {
+        corralon.proximo(id);
+        caja[id].recibirLista(listaCliente);
+        //Emite comprobante
+        caja[id].darComprobante(comprobante);
+    }
+}
+
+
+
+C)
+Monitor corralon
+{
+    cola cajasLibre;
+    cond esperaCaja;
+    cond esperaEmpleadoFin;
+    int esperando = 0, cantCajas = 0;
+    int clientesRestantes = N;
+
+    procedure llegada(id: out int)
+    {
+        if (cantCajas == 0)
+        {
+            esperando++;
+            wait(esperaCaja);
+        }
+        else
+        {
+            cantCajas--;
+        }
+        pop(cajasLibres, id);
+    }
+
+    procedure notificarAtendido(id: in int)
+    {
+        clientesRestantes--;
+        if (clientesRestantes == 0)
+        {
+            // Cierra todas las cajas para liberar a los empleados durmientes
+            for i: 0 to E-1
+            {
+                Caja[i].cerrarCaja();
+            }
+        }
+        else
+        {
+            push(cajasLibres, id);
+            if (esperando > 0)
+            {
+                esperando--;
+                signal(esperaCaja);
+            }
+            else
+            {
+                cantCajas++;
+            }
+        }
+    }
+
+    procedure inicializarCajas()
+    {
+        for i: 0 to E-1
+        {
+            push(cajasLibres, i);
+        }
+        cantCajas = E;
+    }
+}
+
+Monitor caja[id: 0..E-1]
+{
+    text listaAux, comprobanteAux;
+    bool hayLista = false;
+    bool cajaCerrada = false;
+    cond esperaEmpleado, esperaComprobante, comprobanteRecibido;
+
+    procedure solicitarCompra(lista: in text, res: out text)
+    {
+        listaAux = lista;
+        hayLista = true;
+        signal(esperaEmpleado);
+        wait(esperaComprobante);
+        res = comprobanteAux;
+        signal(comprobanteRecibido);
+    }
+
+    procedure recibirLista(lista: out text, atendio: out bool)
+    {
+        if(not hayLista && not cajaCerrada)
+        {
+            wait(esperaEmpleado);
+        }
+        if(cajaCerrada && not hayLista)
+        {
+            atendio = false;
+        }
+        else
+        {
+            lista = listaAux;
+            hayLista = false;
+            atendio = true;
+        }
+    }
+
+    procedure darComprobante(comprobante: in text)
+    {
+        comprobanteAux = comprobante;
+        signal(esperaComprobante);
+        wait(comprobanteRecibido);
+    }
+
+    procedure cerrarCaja()
+    {
+        cajaCerrada = true;
+        signal(esperaEmpleado); // Despierta al empleado por si estaba esperando clientes
+    }
+}
+
+process Persona [id: 0..N-1]
+{
+    int idCaja;
+    text lista, comprobante;
+
+    Corralon.llegada(idCaja);
+    Caja[idCaja].solicitarCompra(lista, comprobante);
+    Corralon.notificarAtendido(idCaja);
+}
+
+process Empleado [id: 0..E-1]
+{
+    text listaCliente, comprobante;
+    bool continuar = true;
+
+    while (continuar)
+    {
+        Caja[id].recibirLista(listaCliente, continuar);
+        if (continuar)
+        {
+            comprobante = GenerarComprobante(listaCliente);
+            Caja[id].darComprobante(comprobante);
+        }
+    }
+}
+
+
+
+
