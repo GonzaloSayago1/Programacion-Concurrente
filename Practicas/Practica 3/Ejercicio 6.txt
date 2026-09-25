@@ -1,0 +1,114 @@
+Monitor aula
+{
+    int llegaron = 0, numGrupo;
+    cond esperaJTP;
+    queue fila;
+    cond esperaGrupo[50];
+
+    procedure esperarEnFila(id: in int, grupo: out int)
+    {
+            llegaron++;
+            push(fila, id)
+            if(llegaron == 50) {signal(esperaJTP)} //Si es el ultimo notifica al JTP
+            wait(esperaGrupo[id]); //Duerme en su posición esperando que lo llamen
+            grupo = numGrupo;
+            signal(esperaDato); //Avisa al JTP que tomo el numero
+    }
+
+    procedure asignarGrupos()
+    {
+        int idActual;
+
+        if(llegaron < 50)
+        {
+            wait(esperaJTP);
+
+        }
+        for i: 1 to 50
+        {
+            pop(fila, idActual);
+            numGrupo = AsignarNroGrupo();
+            signal(esperaGrupo[idActual]); //Despierta al siguiente alumno
+            wait(esperaDato); //Espera que tome el dato (numero de grupo)
+        }
+    }
+}
+
+Monitor escritorio
+{
+    queue entregas;
+    int entregasPorGrupo[1..25] = ([25] 0);
+    int leyeronNota[1..25] = ([25] 0);
+    int notaAsignada[1..25];
+    int puntajeActual = 25;
+
+    cond esperaEntrega;
+    cond esperaNota[1..25];
+    cond grupoTermino[1..25];
+
+
+    procedure termino(grupo: in int, nota: out int)
+    {
+        push(entregas, grupo);
+        signal(esperaEntrega); // Avisa al JTP que entregó
+
+        wait(esperaNota[grupo]); // Espera a que el grupo completo sea calificado
+        nota = notaAsignada[grupo];
+
+        leyeronNota[grupo]++;
+        if (leyeronNota[grupo] == 2)
+        {
+            signal(grupoTermino[grupo]); // El segundo alumno le avisa al JTP
+        }
+
+    }
+
+    procedure asignarNotas()
+    {
+        int grupoActual;
+        bool grupoCompleto;
+
+        for g: 1 to 25 // 25 grupos en total
+        {
+            grupoCompleto = false;
+
+            // Busca entregas hasta encontrar un grupo donde los dos integrantes hayan entregado
+            while (!grupoCompleto)
+            {
+                if (empty(entregas)) {wait(esperaEntrega);}
+                pop(entregas, grupoActual);
+                entregasPorGrupo[grupoActual]++;
+
+                if (entregasPorGrupo[grupoActual] == 2)
+                {
+                    grupoCompleto = true;
+                }
+            }
+
+            // Asigna la nota al grupo que acaba de completarse
+            notaAsignada[grupoActual] = puntajeActual;
+            puntajeActual--;
+
+            // Despierta a los dos integrantes
+            signal_all(esperaNota[grupoActual]);
+
+            // Espera que ambos lean la nota antes de avanzar al siguiente grupo
+            wait(grupoTermino[grupoActual]);
+        }
+    }
+}
+
+process alumno[id: 0..49]
+{
+    int numGrupo, notaGrupo;
+
+    aula.esperarEnFila(id, numGrupo);
+    //Realiza tarea
+    escritorio.termino(numGrupo, notaGrupo);
+}
+
+process jtp
+{
+    aula.asignarGrupos();
+    escritorio.asignarNotas();
+}
