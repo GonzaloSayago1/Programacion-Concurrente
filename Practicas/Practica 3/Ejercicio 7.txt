@@ -1,0 +1,94 @@
+process corredor [id: 0..C-1]
+{
+    Maraton.llegada();
+    //Corre
+    Maquina.solicitarUso();
+    Maquina.liberarUso();
+}
+
+process Repositor
+{
+    while(true)
+    {
+        Maquina.esperarAvisoReponer();
+        // Repone botellas
+        Maquina.notificarFinReposicion();
+    }
+}
+
+Monitor Maraton
+{
+    int cantidad = 0;
+    cond esperaLlegada;
+
+    procedure llegada()
+    {
+        cantidad++;
+        if(cantidad < C)
+        {
+            wait(esperaLlegada);
+        }
+        else
+        {
+            signal_all(esperaLlegada); //El ultimo despierta a todos
+        }
+    }
+}
+
+Monitor Maquina
+{
+    int botellas = 20;
+    bool ocupada = false;
+    int esperando = 0;
+
+    cond filaCorredores;
+    cond repositor;
+    cond reposicionLista;
+
+    procedure solicitarUso()
+    {
+        // Si la máquina está siendo usada o hay gente esperando turno, hace la fila
+        if (ocupada || esperando > 0)
+        {
+            esperando++;
+            wait(filaCorredores);
+        }
+        else
+        {
+            ocupada = true;
+        }
+
+        // Si no hay botellas, pide recarga
+        if (botellas == 0)
+        {
+            signal(repositor);        // Despierta al repositor
+            wait(reposicionLista);    // Espera a que termine de reponer
+        }
+
+        botellas--; // Saca su botella
+    }
+
+    procedure liberarUso()
+    {
+        if (esperando > 0)
+        {
+            esperando--;
+            signal(filaCorredores);   // Habilita al siguiente en orden de llegada
+        }
+        else
+        {
+            ocupada = false;          // Nadie esperando, máquina libre
+        }
+    }
+
+    procedure esperarAvisoReponer()
+    {
+        wait(repositor);              // Duerme hasta que un corredor encuentre 0 botellas
+    }
+
+    procedure notificarFinReposicion()
+    {
+        botellas = 20;
+        signal(reposicionLista);      // Avisa al corredor que estaba esperando frente a la máquina
+    }
+}
