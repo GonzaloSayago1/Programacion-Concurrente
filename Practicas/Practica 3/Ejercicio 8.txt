@@ -1,0 +1,85 @@
+process jugador[id: 1..20]
+{
+    int idEquipo, idCancha;
+    equipo = DarEquipo();
+    armadorEquipo[equipo].llegada(idCancha);
+    cancha[idCancha].llegada();
+}
+
+Monitor armadorEquipo[id: 0..4]
+{
+    int cantidad = 0;
+    int canchaAux;
+    procedure llegada(idCancha: out int)
+    {
+        cantidad++;
+        if(cantidad < 5) { wait(compañeros)}
+        else
+        {
+            armarPartido.unirse(id, canchaAux);
+            signal_all(compañeros);
+        }
+
+        //Recibe la cancha donde tiene que jugar
+        idCancha = canchaAux;
+    }
+}
+
+Monitor armarPartido
+{
+    int equipoCancha[4];
+    int canchaActual = 1;
+    int equipos esperando = 0;
+    cond colaEquipos[4];
+    queue esperaEquipos; //Guardo los ids de los equipos que estan completos
+
+    procedure unirse(equipo: in int; canchaAsignada: out int)
+    {
+        push(esperaEquipos, equipo);
+
+        if(esperaEquipos.size() == 2)
+        {
+            int eq1 = pop(esperaEquipo);
+            int eq2 = pop(esperaEquipo);
+            equipoCancha[eq1] = canchaActual;
+            equipoCancha[eq2] = canchaActual;
+            canchaActual++;
+            signal(colaEquipos[eq1]);
+        }
+        else { wait(colaEquipos[equipo]) }
+
+        //Devuelve cancha asignada
+        canchaAsignada = equipoCancha[equipo];
+    }
+}
+
+Monitor cancha[id: 0..1]
+{
+    int jugadores = 0;
+    cond espera;
+    cond terminar();
+
+    procedure llegada()
+    {
+        jugadores++;
+        if(cant == 10) { signal(espera) }
+        wait(terminar);
+    }
+
+    procedure iniciar()
+    {
+        if(jugadores < 10) { wait(espera) }
+    }
+
+    procedure terminar()
+    {
+        signal_all(terminar);
+    }
+}
+
+Monitor partido[id: 0..1]
+{
+    cancha.iniciar();
+    delay(50 minutos);
+    cancha.terminar();
+}

@@ -19,18 +19,18 @@ process Repositor
 Monitor Maraton
 {
     int cantidad = 0;
-    cond esperaLlegada;
+    cond esperaLlegada, inicio;
 
     procedure llegada()
     {
         cantidad++;
-        if(cantidad < C)
+        if (cantidad < C)
         {
             wait(esperaLlegada);
         }
         else
         {
-            signal_all(esperaLlegada); //El ultimo despierta a todos
+            signal_all(esperaLlegada);
         }
     }
 }
