@@ -27,7 +27,7 @@ process Trigo [id: 0..T-1]
 
     //Avisa que termino
     P(mutexEventos)
-    push(colaEventos, (LLEGADA, TRIGO, id));
+    push(colaEventos, (SALIDA, TRIGO, id));
     V(mutexEventos)
     V(semCoordinador) //Despierta al coordinador
 }
@@ -85,7 +85,7 @@ process coordinador{
 
             //Verifica que no haya más de 5 del mismo tipo descargando y haya lugar para descargar
             if (tipo == TRIGO && descargandoT < 5 && (descargandoT + descargandoM) < 7){
-                descargandoT; //Avisa que hay uno más descargando
+                descargandoT++; //Avisa que hay uno más descargando
                 V(esperaT[id]); //Despierta al camion correspondiente
                 puedePasar = true; //Avisa que paso
             }
