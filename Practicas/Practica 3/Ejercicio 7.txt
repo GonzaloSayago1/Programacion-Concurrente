@@ -1,25 +1,9 @@
-process corredor [id: 0..C-1]
-{
-    Maraton.llegada();
-    //Corre
-    Maquina.solicitarUso();
-    Maquina.liberarUso();
-}
+Nota: Separo lógica de hacer fila para agarrar una botella y reponer botellas.
 
-process Repositor
-{
-    while(true)
-    {
-        Maquina.esperarAvisoReponer();
-        // Repone botellas
-        Maquina.notificarFinReposicion();
-    }
-}
-
-Monitor Maraton
+monitor Maraton
 {
     int cantidad = 0;
-    cond esperaLlegada, inicio;
+    cond esperaLlegada;
 
     procedure llegada()
     {
@@ -35,60 +19,100 @@ Monitor Maraton
     }
 }
 
-Monitor Maquina
+monitor FilaMaquina
 {
     int botellas = 20;
     bool ocupada = false;
     int esperando = 0;
+    cond fila;
 
-    cond filaCorredores;
-    cond repositor;
-    cond reposicionLista;
-
-    procedure solicitarUso()
+    procedure tomarTurno(hayBotellas: out bool)
     {
-        // Si la máquina está siendo usada o hay gente esperando turno, hace la fila
         if (ocupada || esperando > 0)
         {
             esperando++;
-            wait(filaCorredores);
+            wait(fila);
         }
         else
         {
             ocupada = true;
         }
 
-        // Si no hay botellas, pide recarga
-        if (botellas == 0)
+        hayBotellas = (botellas > 0);
+        if (hayBotellas)
         {
-            signal(repositor);        // Despierta al repositor
-            wait(reposicionLista);    // Espera a que termine de reponer
+            botellas--; // Si hay stock, toma su botella directamente
         }
-
-        botellas--; // Saca su botella
     }
 
-    procedure liberarUso()
+    procedure reponerYTomar()
+    {
+        botellas = 20;
+        botellas--; // El corredor actual saca su botella
+    }
+
+    procedure liberarTurno()
     {
         if (esperando > 0)
         {
             esperando--;
-            signal(filaCorredores);   // Habilita al siguiente en orden de llegada
+            signal(fila);     // Pasa la máquina al siguiente en la fila FIFO
         }
         else
         {
-            ocupada = false;          // Nadie esperando, máquina libre
+            ocupada = false;  // No hay nadie esperando, queda libre
         }
     }
+}
 
-    procedure esperarAvisoReponer()
+monitor CoordinacionReposicion
+{
+    bool hayAviso = false;
+    cond esperaRepositor;
+    cond reposicionLista;
+
+    procedure avisarYEsperar()
     {
-        wait(repositor);              // Duerme hasta que un corredor encuentre 0 botellas
+        hayAviso = true;
+        signal(esperaRepositor);
+        wait(reposicionLista);    // Espera a que termine la carga física
     }
 
-    procedure notificarFinReposicion()
+    procedure esperarAviso()
     {
-        botellas = 20;
-        signal(reposicionLista);      // Avisa al corredor que estaba esperando frente a la máquina
+        if(not hayAviso){wait(esperaRepositor)}
+        hayAviso = false; //Resetea variable auxiliar
+    }
+
+    procedure notificarFin()
+    {
+        signal(reposicionLista);  // Le avisa al corredor que ya terminó
+    }
+}
+
+process Corredor [id: 0..C-1]
+{
+    bool hayBotellas;
+
+    Maraton.llegada();
+    // Corre maraton
+    FilaMaquina.tomarTurno(hayBotellas);
+
+    if (!hayBotellas)
+    {
+        CoordinacionReposicion.avisarYEsperar(); //Llama al repositor
+        FilaMaquina.reponerYTomar(); // Avisa que la maquina se lleno nuevamente
+    }
+
+    FilaMaquina.liberarTurno();
+}
+
+process Repositor
+{
+    while (true)
+    {
+        CoordinacionReposicion.esperarAviso();
+        // Carga físicamente las 20 botellas (tarea fuera de monitores)
+        CoordinacionReposicion.notificarFin();
     }
 }

@@ -6,6 +6,12 @@ process jugador[id: 1..20]
     cancha[idCancha].llegada();
 }
 
+process partido[id:0..1]{
+    cancha.iniciar()
+    delay(50 minutos)
+    cancha.terminar();
+}
+
 Monitor armadorEquipo[id: 0..4]
 {
     int cantidad = 0;
@@ -75,11 +81,4 @@ Monitor cancha[id: 0..1]
     {
         signal_all(terminar);
     }
-}
-
-Monitor partido[id: 0..1]
-{
-    cancha.iniciar();
-    delay(50 minutos);
-    cancha.terminar();
 }
