@@ -1,0 +1,62 @@
+Monitor parque
+{
+    queue espera;
+    cond esperaTurno[N];
+    cond esperaEmpleado;
+    cond esperaFin;
+    bool juegoEnUso = false;
+
+    procedure solicitarUso(id: in int)
+    {
+        push(espera, id);
+        signal(esperaEmpleado);
+        wait(esperaTurno[id]);
+    }
+
+    procedure esperarPersona(sig: out int)
+    {
+        if(empty(espera)) {wait(esperaEmpleado)}
+        pop(espera, sig);
+    }
+
+    procedure llamarPersona(sig: in int)
+    {
+        juegoEnUso = true;
+        signal(esperaTurno[sig]);
+    }
+
+    procedure esperarJuego()
+    {
+        if(juegoEnUso)
+        {
+            wait(filaEnUso);
+        }
+    }
+
+    procedure notificarFin()
+    {
+        juegoEnUso = false;
+        signal(esperaFin); //libera juego
+    }
+}
+
+process persona[id: 0..N-1]
+{
+    parque.solicitarUso(id);
+    Usar_juego; //funcion para jugar
+    parque.notificarFin();
+}
+
+process empleado
+{
+    int idPersona;
+
+    for i: 1 to N
+    {
+        parque.esperarPersona(idPersona); //Una vez que llega una persona desinfecta el juego
+        Desinfectar_juego;
+        delay(10 minutos);
+        parque.llamarPersona(idPersona);
+        parque.esperarJuego();
+    }
+}
