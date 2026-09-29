@@ -1,0 +1,67 @@
+Monitor preceptor
+{
+    text examen; //El mismo para todos
+    int cant = 0;
+    cond esperaExamen;
+
+    procedure solicitarExamen(exam: out text)
+    {
+        cant++;
+        if(cant < 45) {wait(esperaExamen)}
+        //El ultimo despierta a todos
+        signal_all(esperaExamen);
+        exam = examen;
+    }
+}
+
+Monitor escritorio
+{
+    cond esperaNota[45];
+    cond esperaAlumnos;
+    queue entregas;
+    int notas[45];
+
+    procedure entregarExamen(id: in int; exam: in text; nota: out int)
+    {
+        push(entregas, (id, exam));
+        signal(esperaAlumnos);
+        wait(esperaNota[id]);
+        nota = notas[id];
+    }
+
+    procedure tomarExamen(id: out int, exam: out text)
+    {
+        if(empty(entregas)) {wait(esperaAlumnos)}
+        exam, id = pop(entregas);
+    }
+
+    procedure asignarNota(id: in int, nota: in int)
+    {
+        notas[id] = nota;
+        signal(esperaNota);
+    }
+}
+
+process alumno[id: 0..44]
+{
+    text exam;
+    int nota;
+
+    preceptor.solicitarExamen(exam);
+    //hace examen
+    escritorio.entregarExamen(id, exam, nota);
+}
+
+process profesora
+{
+    int idAlumno;
+    int nota;
+    text exam;
+
+    for i: 1 to 45
+    {
+        escritorio.tomarExamen(idAlumno, exam);
+        nota = corregirExamen(exam);
+        escritorio.asignarNota(idAlumno, nota);
+    }
+}
