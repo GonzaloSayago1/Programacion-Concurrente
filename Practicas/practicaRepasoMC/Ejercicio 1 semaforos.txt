@@ -1,0 +1,94 @@
+A)
+sem mutexTerminal = 1;
+sem mutexCola = 1;
+sem espera[P] = ([P] 0);
+bool terminalLibre = true;
+int cola[P];
+
+process persona[id 0..P-1]
+{
+    int siguiente;
+
+    P(mutexTerminal)
+    if(terminalLibre)
+    {
+        terminalLibre = false;
+        V(mutexTerminal);
+    }
+    else {
+        V(mutexTerminal);
+        P(mutexCola)
+        push(cola, id);
+        V(mutexCola);
+        P(espera[id]);
+    }
+    //Usa terminal
+    usarTerminal();
+    //Llama al siguiente o libera la maquina
+    P(mutexCola);
+    if(empty(cola))
+    {
+        P(mutexTerminal)
+        terminalLibre = true;
+        V(mutexTerminal);
+    }
+    else {
+        //Despierta al siguiente
+        pop(cola, siguiente);
+        V(espera[siguiente]);
+    }
+    V(mutexCola);
+}
+
+B)
+queue terminalesLibres; //Asumo que esta inicializado con terminales libres
+int cantidadLibre = T;
+sem mutexCantidadLibre = 1;
+sem esperaTerminal[P] = ([P] 0);
+sem mutexColaEspera = 1;
+sem mutexTerminalesLibres = 1;
+queue colaEspera;
+
+process persona[id: 0..P-1]
+{
+    int miTerminal; int siguiente;
+
+    P(mutexCantidadLibre);
+    if(cantidadLibre > 0)
+    {
+        cantidadLibre--;
+        V(mutexCantidadLibre);
+        P(mutexTerminalesLibres);
+        pop(terminalesLibres, miTerminal);
+        V(mutexTerminalesLibres);
+    }
+    else{
+        V(mutexCantidadLibre);
+        P(mutexColaEspera);
+        push(colaEspera, id);
+        V(mutexColaEspera);
+        P(esperaTerminal[id]);
+        pop(terminalesLibres, miTerminal);
+    }
+    //Usa terminal
+    usarTerminal(miTerminal);
+
+    //Libera terminal
+    P(mutexTerminalesLibres);
+    push(terminalesLibres, miTerminal);
+    V(mutexTerminalesLibres);
+
+    //Despierta al siguiente;
+    P(mutexColaEspera);
+    if(empty(colaEspera))
+    {
+        P(mutexCantidadLibre);
+        cantidadLibre++;
+        V(mutexCantidadLibre);
+    }
+    else {
+        pop(colaEspera, siguiente);
+        V(esperaTerminal[siguinet]);
+    }
+    V(mutexColaEspera);
+}
