@@ -1,0 +1,57 @@
+queue colaEspera;
+sem mutexColaEspera  = 1;
+sem hayGente = 0;
+sem esperaVacuna[50] = ([50] 0);
+
+process persona[id: 0..49]
+{
+    P(mutexColaEspera);
+    push(colaEspera, id);
+    V(mutexColaEspera);
+
+    //Avisa que llego
+    V(hayGente);
+
+    //Duerme hasta que lo llamen
+    P(esperaVacuna[id]);
+}
+
+process empleado
+{
+    bool vacunando = true;
+    int cantidad = 0;
+    int sig;
+    queue esperaAux;
+
+    while(vacunando)
+    {
+        P(hayGente);
+
+        //Desencola e incrementa cantidad
+        P(mutexColaEspera);
+        pop(colaEspera, sig);
+        V(mutexColaEspera);
+        cantidad++;
+        push(esperaAux, sig);
+
+        //Verifica si puede vacunar
+        if(esperaAux.size() == 5)
+        {
+            for i: 1 to 5
+            {
+                pop(esperaAux, sig);
+                VacunarPersona(sig);
+                push(esperaAux, sig);
+            }
+            //Una vez que vacuno a todos los deja ir
+            for i: 1 to 5
+            {
+                pop(esperaAux);
+                V(esperaVacuna[sig]);
+            }
+        }
+
+        //Verifica si termino
+        if(cantidad == 50) { vacunando = false }
+    }
+}

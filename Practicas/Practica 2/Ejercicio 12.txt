@@ -1,0 +1,153 @@
+// Colas y sincronización inicial con el recepcionista
+queue filaRecepcion;
+sem mutexFilaRecepcion = 1;
+sem hayGenteRecepcion = 0;
+sem esperaPuesto[1..150] = ([150] 0);
+int puestoAsignado[1..150];
+
+// Colas y sincronización para los 3 puestos de hisopado
+queue filaPuesto[0..2];
+sem mutexPuesto[0..2] = ([3] 1);
+sem hayGentePuesto[0..2] = ([3] 0);
+sem esperaHisopado[1..150] = ([150] 0);
+
+// Contador de personas asignadas por puesto (mantenido por el recepcionista)
+int cantEnPuesto[0..2] = ([3] 0);
+sem mutexContadores = 1;
+
+process Pasajero [id: 1..150]
+{
+    int miPuesto;
+
+    Llega a recepción
+    P(mutexFilaRecepcion);
+    push(filaRecepcion, id);
+    V(mutexFilaRecepcion);
+    V(hayGenteRecepcion);
+
+    // Espera a que el recepcionista le indique su puesto
+    P(esperaPuesto[id]);
+    miPuesto = puestoAsignado[id];
+
+    //Se dirige al puesto asignado
+    P(mutexPuesto[miPuesto]);
+    push(filaPuesto[miPuesto], id);
+    V(mutexPuesto[miPuesto]);
+    V(hayGentePuesto[miPuesto]);
+
+    // Espera a que la enfermera lo hisope
+    P(esperaHisopado[id]);
+}
+
+process Recepcionista
+{
+    int idPasajero, minGente, puestoElegido;
+
+    for i: 1 to 150
+    {
+        P(hayGenteRecepcion);
+
+        P(mutexFilaRecepcion);
+        pop(filaRecepcion, idPasajero);
+        V(mutexFilaRecepcion);
+
+        // Busca el puesto que tiene menos gente asignada
+        P(mutexContadores);
+        puestoElegido = 0;
+        minGente = cantEnPuesto[0];
+
+        for p: 1 to 2
+        {
+            if (cantEnPuesto[p] < minGente)
+            {
+                minGente = cantEnPuesto[p];
+                puestoElegido = p;
+            }
+        }
+        cantEnPuesto[puestoElegido]++;
+        V(mutexContadores);
+
+        puestoAsignado[idPasajero] = puestoElegido;
+        V(esperaPuesto[idPasajero]); // Habilita al pasajero a ir al puesto
+    }
+}
+
+process Enfermera [id: 0..2]
+{
+    int idPasajero;
+
+    while (true)
+    {
+        P(hayGentePuesto[id]);
+
+        P(mutexPuesto[id]);
+        pop(filaPuesto[id], idPasajero);
+        V(mutexPuesto[id]);
+
+        Hisopar(idPasajero);
+
+        // Actualiza el contador del puesto para que el recepcionista sepa que se desocupó
+        P(mutexContadores);
+        cantEnPuesto[id]--;
+        V(mutexContadores);
+
+        V(esperaHisopado[idPasajero]); // Libera al pasajero hisopado
+    }
+}
+
+
+B)
+//variables puestos
+sem mutexPuestos = 1;
+int cantEnPuesto[3] = ([3] 0);
+//Variables cola espera
+sem mutexEspera[3] = ([3] 1);
+queue esperaPuesto[3];
+sem esperaEnfermera[150] = ([150] 0);
+sem hayGentePuesto[3] = ([3] 0);
+process pasajero[id: 0..149]
+{
+    int puestoMin = 0;
+    P(mutexPuestos);
+    int min = cantEnPuesto[0];
+    for p: 1 to 2
+    {
+        if(cantEnPuesto[p] < min)
+        {
+            puestoMin = p;
+            min = cantEnPuesto[p];
+        }
+    }
+    cantEnPuesto[puestoMin]++;
+    V(mutexPuestos);
+
+    //Se encola y espera que lo llamen
+    P(mutexEspera[puestoMin]);
+    push(esperaPuesto[puestoMin], id);
+    V(mutexEspera[puestoMin]);
+    V(hayGentePuesto[puestoMin]);
+    P(esperaEnfermera[id]);
+}
+
+process Enfermera[id: 0..2]
+{
+    int sig;
+
+    while(true)
+    {
+        P(hayGentePuesto[id]);
+        P(mutexEspera[id]);
+        pop(esperaPuesto[id], sig);
+        V(mutexEspera[id]);
+
+        //Realiza hisopado
+        Hisopar(sig);
+
+        //Decrementa cantidad esperando y despierta al pasajero
+        P(mutexPuestos);
+        cantEnPuesto[id]--;
+        V(mutexPuestos);
+
+        V(esperaEnfermera[sig]);
+    }
+}
