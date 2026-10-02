@@ -1,0 +1,60 @@
+sem mutexEspera = 1;
+bool libre = true;
+queue espera;
+sem esperaTurno[U] = ([U] 0);
+int cantidad = 100;
+//Variables para controlar reposicion
+sem esperaLlamada = 0;
+sem esperaReposicion = 0;
+
+process usuarios[id: 0..U-1]
+{
+    int sig;
+
+    P(mutexEspera);
+    if(libre)
+    {
+       libre = false;
+       V(mutexEspera)
+    }
+    else {
+        push(espera, id);
+        V(mutexEspera);
+        P(esperaTurno[id]);
+    }
+
+    if(cantidad == 0)
+    {
+        V(esperaLlamada);
+        P(esperaReposicion);
+    }
+    tomarGaseosa();
+    cantidad--;
+
+    //Passig the condition
+    P(mutexEspera);
+    if(empty(espera))
+    {
+        libre = true;
+    }
+    else{
+        pop(espera, sig);
+        V(esperaTurno[sig]);
+    }
+    V(mutexEspera);
+}
+
+process repositor
+{
+    while(true)
+    {
+        //Espera que lo llamen
+        P(esperaLlamada);
+
+        //Repone
+        cantidad = 100;
+
+        //Despierta al que esta usando la maquina
+        V(esperaReposicion);
+    }
+}

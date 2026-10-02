@@ -1,0 +1,36 @@
+Monitor montaña
+{
+    bool disponible = true;
+    cond espera;
+    int esperando = 0;
+
+    procedure pasar()
+    {
+        if(disponible){
+            disponible = faLse;
+        }
+        else {
+            esperando++;
+            wait(espera);
+        }
+    }
+
+    procedure salir()
+    {
+        if(esperando > 0)
+        {
+            esperando--;
+            signal(espera);
+        }
+        else {
+            disponible = true;
+        }
+    }
+}
+
+process escalador[id: 0..29]
+{
+    montaña.pasar();
+    //escala
+    montaña.salir();
+}

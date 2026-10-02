@@ -1,0 +1,39 @@
+Monitor empresa[id: 0..4]
+{
+    cond esperaGrupo;
+    int llegaron = 0;
+    int ventasTotales = 0;
+
+    procedure llegada()
+    {
+        llegaron++;
+        if(llegaron < 4) {wait(esperaGrupo)}
+        else {
+            llegaron = 0; //Reinicio variable para reutilizarla
+            signal_all(esperaGrupo);
+        }
+    }
+
+    procedure terminar(misVentas: in int; total: out int)
+    {
+        llegaron++;
+        ventasTotales += misVentas;
+        if(llegaron < 4) {wait(esperaGrupo)}
+        else{
+            signal_all(esperaGrupo);
+        }
+        //Guardo ventas totales
+        total = ventasTotales;
+    }
+}
+
+process trabajador[id: 0..19]
+{
+    int idGrupo; //Inicailizado con numeros de 0..4
+    int misVentas;
+    int totalVentas;
+
+    empresa[idGrupo].llegada();
+    misVentas = Vender(); //Simula ventas
+    empresa[idGrupo].terminar(misVentas, totalVentas);
+}

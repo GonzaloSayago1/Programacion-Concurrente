@@ -1,0 +1,44 @@
+Monitor autoridadMesa
+{
+    bool libre = true;
+    int esperando = 0;
+    sortedQueue fila;
+    cond esperaTurno[N];
+    int sig;
+
+    procedure pasar(id: in int; condicion: in bool)
+    {
+        if(not libre)
+        {
+            insertar(fila, id, condicion); //Asumo que existe esta funcion
+            esperando++;
+            wait(esperaTurno[id]);
+        }
+        else {
+            libre = false;
+        }
+    }
+
+    procedure salir()
+    {
+        if(esperando > 0)
+        {
+            pop(fila, sig);
+            esperando--;
+            signal(esperaTurno[sig]);
+        }
+        else {
+            libre = true;
+        }
+    }
+}
+
+process persona[id: 0..N-1]
+{
+    bool cumpleCondicion; // asumu que cada persona tiene esta var iable inicializada con el valor correspondiente
+
+    autoridadMesa.pasar(id, cumpleCondicion);
+    Votar();
+    autoridadMesa.salir();
+
+}

@@ -1,0 +1,50 @@
+int cantidad = 0;
+queue transacciones; //Asumo que se inicializa con 10000
+sem mutexTransacciones = 1;
+sem mutexContador[10] = ([10] 1);
+int contador[10] = ([10] 0);
+sem mutexTermino = 1;
+int termino = 0;
+
+process worker[id: 0..6]{
+    int puntaje, sig;
+
+    while(cantidad < 10000)
+    {
+        P(mutexTransacciones)
+        if(cantidad < 10000)
+        {
+            pop(transacciones, sig);
+            cantidad++;
+            V(mutexTransacciones);
+        }
+        else{
+            sig = -1;
+            V(mutexTransacciones);
+        }
+
+        //Chequea si debe validar
+        if(sig != -1)
+        {
+            puntaje = validar(sig);
+
+            //Cuenta transaccion
+            P(mutexContador[puntaje])
+            contador[puntaje]++;
+            V(mutexContador[puntaje]);
+        }
+    }
+
+    //Avisa que termino
+    P(mutexTermino);
+    termino++;
+    if(termino == 7)
+    {
+        for i: 0 to 9
+        {
+            informar(contador[i]);
+        }
+    }
+    V(mutexTermino);
+
+}
