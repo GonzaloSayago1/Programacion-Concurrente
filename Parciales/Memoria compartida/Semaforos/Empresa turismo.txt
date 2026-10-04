@@ -1,0 +1,77 @@
+Enunciado: Una empresa de turismo posee un micro con capacidad para 50 personas. Hay un único vendedor que
+atiende a los C clientes (C > 50) que intentan comprar un pasaje de acuerdo al orden de llegada (suponga
+que la atención de un cliente tarda un par de minutos), si aún hay lugares disponibles, le indica el número de
+asiento que le tocó. Cada cliente, luego de ser atendidos por el vendedor, se dirige al micro para subir en
+caso de que le hayan dado un asiento. El micro espera a que los 50 pasajeros hayan subido para realizar el
+viaje.
+
+sem mutexEspera = 1;
+queue espera;
+sem hayGente = 0;
+
+sem esperaAtencion[C] = ([C] 0);
+int pasajeAsignado[C];
+
+// Variables para la barrera del micro
+int subieron = 0;
+sem mutexSubieron = 1;
+sem esperaViaje = 0;
+
+process Cliente [id: 0..C-1]
+{
+    int miPasaje;
+
+    P(mutexEspera);
+    push(espera, id);
+    V(mutexEspera);
+    V(hayGente);
+
+    Espera la respuesta del vendedor
+    P(esperaAtencion[id]);
+    miPasaje = pasajeAsignado[id];
+
+    Si consiguió pasaje, sube al micro
+    if (miPasaje != -1)
+    {
+        P(mutexSubieron);
+        subieron++;
+        if (subieron == 50)
+        {
+            V(esperaViaje);
+        }
+        V(mutexSubieron);
+    }
+}
+
+process Vendedor
+{
+    int sig;
+    int vendidos = 0;
+
+    for i: 1 to C
+    {
+        P(hayGente);
+        P(mutexEspera);
+        pop(espera, sig);
+        V(mutexEspera);
+
+        // Controla la capacidad
+        if (vendidos < 50)
+        {
+            pasajeAsignado[sig] = vendidos; // Asigna un asiento válido (0 a 49)
+            vendidos++;
+        }
+        else
+        {
+            pasajeAsignado[sig] = -1; // Indica que ya no hay lugar
+        }
+
+        V(esperaAtencion[sig]);
+    }
+}
+
+process Micro
+{
+    P(esperaViaje);
+    // Realiza el viaje
+}

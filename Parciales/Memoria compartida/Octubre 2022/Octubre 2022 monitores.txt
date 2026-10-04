@@ -1,0 +1,49 @@
+Monitor sistema
+{
+    bool libre = true;
+    sortedQueue cola; cola ordenada por prioridad de procesos
+    cond esperaTurno[20];
+    int esperando = 0;
+
+    procedure solicitarAcceso(id: in int; prioridad: in int)
+    {
+        if(libre)
+        {
+            libre = false;
+        }
+        else {
+            esperando++;
+            insertarAscendente(cola, (id, prioridad));
+            wait(esperaTurno[id]);
+        }
+    }
+
+    procedure salir()
+    {
+        int id, prioridad;
+
+        if(esperando == 0)
+        {
+            libre = true;
+        }
+        else {
+            esperando--;
+            pop(cola, (id, prioridad));
+            signal(esperaTurno[id]);
+        }
+    }
+}
+
+process proceso[id: 0..19]
+{
+    int prioridad;
+    text archivo;
+
+    while(true)
+    {
+        resultado = procesar();
+        sistema.solicitarAcceso(id, prioridad);
+        //persiste resultado en archivo
+        sistema.salir();
+    }
+}

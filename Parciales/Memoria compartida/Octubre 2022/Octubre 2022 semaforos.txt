@@ -1,0 +1,101 @@
+//variables coordinador
+sem hayAutos = 0;
+sem mutexEsperaCoordinador = 1;
+queue esperaCoordinador;
+sem mutexCantidad = 1;
+int cantidadEstacion[7] = ([7] 0); //Usado como contador
+
+//Variables estacion
+sem mutexEsperaEstacion[7] = ([7] 1);
+queue esperaEstacion[7];
+sem esperaAutos[7] = ([7] 0);
+sem esperaVerificacion[150] = ([150] 0);
+text verificaciones[150];
+
+//variables autos
+sem esperaTurno[150] = ([150] 0);
+int estacionAsignada[150];
+
+process vehiculo[id: 0.. 149]
+{
+    int est;
+    text verificacion;
+
+    //Llega y se encola
+    P(mutexEsperaCoordinador);
+    push(esperaCoordinador, id);
+    V(mutexEsperaCoordinador);
+    V(hayAutos);
+
+    //espera coordinador
+    P(esperaTurno[id]);
+    est = estacionAsignada[id];
+
+    //Se dirige a la estacion
+    P(mutexEsperaEstacion[est]);
+    push(esperaEstacion[est], id);
+    V(mutexEsperaEstacion[est]);
+
+    //Espera atencion
+    V(esperaAutos[est]);
+    P(esperaVerificacion[id]);
+    verificacion = verificaciones[id];
+}
+
+process coordinador
+{
+    int min, posMin;
+
+    for i: 1 to 150
+    {
+        P(hayAutos);
+        P(mutexEsperaCoordinador);
+        pop(esperaCoordinador, sig);
+        V(mutexEsperaCoordinador);
+
+        //Calcula minimo
+        P(mutexCantidad);
+        min = cantidadEstacion[0];
+        posMin = 0;
+        for e: 1 to 6
+        {
+            if(cantidadEstacion[i] < min)
+            {
+                min = cantidadEstacion[e];
+                posMin = e;
+            }
+        }
+        cantidadEstacion[posMin]++;
+        V(mutexCantidad);
+
+        //Asigna estacion al auto
+        estacionAsignada[sig] = posMin;
+        V(esperaTurno[sig]);
+    }
+}
+
+process estacion[id: 0..6]
+{
+    int sig;
+    text verificacion;
+    while(true)
+    {
+        //espera que haya gente
+        P(esperaAutos[id]);
+        P(mutexEsperaEstacion[id]);
+        pop(esperaEstacion[id], sig);
+        V(mutexEsperaEstacion[id]);
+
+        //Realiza verificacion
+        verificacion = realizarVerificacion(sig);
+
+        //entrega verificacion
+        verificaciones[sig] = verificacion;
+        V(esperaVerificacion[sig]);
+
+        //decrementa contador
+        P(mutexCantidad);
+        cantidadEstacion[id]--;
+        V(mutexCantidad);
+    }
+}

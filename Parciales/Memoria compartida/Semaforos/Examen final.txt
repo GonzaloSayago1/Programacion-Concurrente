@@ -1,0 +1,98 @@
+Enunciado: En un examen final hay P alumnos y 3 profesores. Cuando todos los alumnos y los profesores han llegado
+comienza el examen. Para esto uno de los profesores (el primero en llegar) le da el examen a cada alumno.
+Cada alumno resuelve su examen, lo entrega y espera que alguno de los profesores lo corrija y le indique la
+nota. Los profesores corrigen los examenes respetando el orden en que los alumnos van entregando.
+
+//variables profesores
+int cantProfes = 0;
+sem mutexProfes = 1;
+sem entregarExamen = 0;
+sem esperaAlumnos = 0;
+int primero;
+sem esperaEntrega = 0;
+
+//variables alumnos
+text examenAsignado[P];
+sem inicio = 0;
+sem mutexAlumnos = 1;
+int alumnos = 0;
+sem mutexEntrega = 1;
+queue entrega;
+sem esperaNota[P]
+int notaAsignada[P];
+sem cantEntregas = 0;
+
+process alumno[id: 0..P-1]
+{
+    text examen;
+
+    P(mutexAlumnos);
+    alumnos++;
+    V(mutexAlumnos);
+    if(alumnos == P) {V(esperaAlumnos)}
+    P(inicio);
+    examen = examenAsignado[id];
+
+    //Realiza examen
+    P(mutexEntrega);
+    push(entrega, (id, examen));
+    V(mutexEntrega);
+    V(cantEntregas);
+
+    //Espera nota
+    P(esperaNota[id]);
+    nota = notaAsignada[id];
+}
+
+process profesor[id: 0..2]
+{
+    text examen;
+    int sig, puntaje;
+
+    //Avisa que llego
+    P(mutexProfes);
+    if(cantProfes == 0) {primero = id}
+    cantProfes++;
+    V(mutexProfes);
+
+    //El ultimo revisa que lleguen todos los alumnos
+    if(cantProfes == 3)
+    {
+        P(esperaAlumnos);
+
+        for i: 1 to 2
+        {
+            V(entregarExamen);
+        }
+
+        //Espera que el primero termine de entregar todos los examenes
+        P(esperaEntrega);
+
+        //Una vez que entrega todos los examenes, despierta a los alumnos
+        for i: 1 to P
+        {
+            V(inicio)//Despierta a todos los alumnos
+        }
+    }
+    else{
+        P(entregarExamen);
+    }
+
+    //Entrega examen
+    if(primero == id)
+    {
+        for i: 1 to P {examenAsignado[i] = examen}
+        V(esperaEntrega) //despierta al ultimo profesor en llegar
+    }
+
+    //Esperan que los alumnos finzalicen su examen
+    P(cantEntregas);
+    P(mutexEntrega);
+    pop(entregas, (sig, examen));
+    V(mutexEntrega);
+
+    //Corrige y entrega nota
+    puntaje = asignarNota(examen);
+    notaAsignada[sig] = puntaje;
+    V(esperaNota[sig]);
+}
