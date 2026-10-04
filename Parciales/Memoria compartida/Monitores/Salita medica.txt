@@ -1,0 +1,59 @@
+Enunciado: Simular una atención en una Salita Medica para vacunar contra el coronavirus. Hay UNA enfermera
+encargada de vacunar a 30 pacientes. Cada paciente tiene un turno asignado (valor entre 1 y 30 ya conocido
+por el paciente). La enfermera atiende a los pacientes de acuerdo al turno que cada uno tiene asignado. Cada
+paciente al llegar espera a que sea su turno y se dirige al consultorio para que la enfermera lo vacune y luego
+se retira. Nota: suponer que existe una función Vacunar() que simula la atención del paciente por parte de la
+enfermera. Todos los procesos DEBEN terminar.
+
+monitor salitaMedica
+{
+    cond esperaEnfermera;
+    cond esperaTurno[1..30];
+    cond esperaVacuna[1..30];
+
+    bool presente[1..30] = ([1..30] false);
+    bool vacunado[1..30] = ([1..30] false);
+
+    procedure llegar(turno: in int)
+    {
+        presente[turno] = true;
+        signal(esperaEnfermera);
+        wait(esperaTurno[turno]);
+    }
+
+    procedure llamarPaciente(turno: in int)
+    {
+        if (not presente[turno]) {wait(esperaEnfermera)}
+        signal(esperaTurno[turno]);
+    }
+
+    procedure retirarse(turno: in int)
+    {
+        //Si todavia no lo vacunaron, espera
+        if (not vacunado[turno]) {wait(esperaVacuna[turno])}
+    }
+
+    procedure finalizarVacunacion(turno: in int)
+    {
+        vacunado[turno] = true;
+        signal(esperaVacuna[turno]);
+    }
+}
+
+process Enfermera
+{
+    for i: 1 to 30
+    {
+        SalitaMedica.llamarPaciente(i);
+        Vacunar();
+        SalitaMedica.finalizarVacunacion(i);
+    }
+}
+
+process Paciente [id: 1..30]
+{
+    int miTurno;
+    SalitaMedica.llegar(miTurno);
+    //Espera vacuna
+    SalitaMedica.retirarse(miTurno);
+}
