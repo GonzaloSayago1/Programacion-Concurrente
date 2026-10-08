@@ -1,0 +1,83 @@
+A)
+chan fila(int);
+
+process cliente[id: 0..N-1]
+{
+    send fila(id);
+}
+
+process empleado
+{
+    int idC;
+
+    for i: 1 to N
+    {
+        receive fila(idC);
+        //Atiende
+    }
+}
+
+
+
+B)
+chan fila(int);
+
+process cliente[id: 0..N-1]
+{
+    send fila(id);
+}
+
+process empleado[id: 0..1]
+{
+    int idC;
+
+    while(true)
+    {
+        receive fila(idC);
+        //Atiende
+    }
+}
+
+
+
+C)
+chan fila(int);
+chan pedido(int);
+chan siguiente[2](int);
+
+process cliente[id: 0..N-1]
+{
+    send fila(id);
+}
+
+process empleado[id: 0..1]
+{
+    int idC;
+    while(true)
+    {
+        send pedido(id);
+        receive siguiente[id](idC); //Espera respuesta obligatoriamente
+        if(idC <> -1){ //atiende }
+        else {
+            // Realiza tareas administrativas
+            delay(900); //15 mins
+        }
+    }
+}
+
+process coordinador
+{
+    int idCliente, idEmpleado;
+
+    while(true)
+    {
+        receive pedido(idEmpleado);
+        if(empty(fila)) {idCliente = -1}
+        else {
+            receive fila(idCliente);
+        }
+
+        //Avisa al empleado
+        send siguiente[idEmpleado](idCliente);
+    }
+}
