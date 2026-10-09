@@ -1,0 +1,90 @@
+A)
+chan pedidos(int, int, int); // tipo (1=pedir, 2=pagar), idCliente, idCabina
+chan cabinaAsignada[N](int);
+chan tickets[N](text);
+
+process Cliente [id: 0..N-1]
+{
+    int cabina;
+    text factura;
+
+    // Solicita cabina (1, id, cabina)
+    send pedidos(1, id, 0);
+    receive cabinaAsignada[id](cabina);
+
+    // Usa la cabina
+    Usar(cabina);
+
+    // Se dirige al empleado para pagar y devolver la cabina (2)
+    send pedidos(2, id, cabina);
+    receive tickets[id](factura);
+}
+
+process Empleado
+{
+    int tipo, idCliente, cabinaUsada;
+    int sigCliente, cabinaParaAsignar;
+    text factura;
+
+    cola cabinasLibres;     // Inicializada con 10 cabinas
+    cola clientesEsperando;
+
+    while (true)
+    {
+        receive pedidos(tipo, idCliente, cabinaUsada);
+
+        if (tipo == 1) // Pedido de cabina
+        {
+            if (not empty(cabinasLibres))
+            {
+                pop(cabinasLibres, cabinaParaAsignar);
+                send cabinaAsignada[idCliente](cabinaParaAsignar);
+            }
+            else
+            {
+                // No hay cabinas libres espera
+                push(clientesEsperando, idCliente);
+            }
+        }
+        else // tipo = 2 (pago y liberación de cabina)
+        {
+            factura = Cobrar(idCliente);
+            send tickets[idCliente](factura);
+
+            // Passing the baton
+            if (not empty(clientesEsperando))
+            {
+                pop(clientesEsperando, sigCliente);
+                send cabinaAsignada[sigCliente](cabinaUsada);
+            }
+            else
+            {
+                push(cabinasLibres, cabinaUsada);
+            }
+        }
+    }
+}
+
+
+
+B)
+//Lo hago con pseudocógido muy resumido
+chan avisos(bool);
+chan usarCabina();
+chan pagar()
+
+process empleado
+{
+    while(true)
+    {
+        receive avisos();
+        if(not empty(pagar))
+        {
+            //Atiende a los que pagan
+        }
+        else if(not empty(usarCabina) and (empty(pagar)))
+        {
+            //Solo atiende solicitudes de uso de cabina si no hay nadie para pagar
+        }
+    }
+}
