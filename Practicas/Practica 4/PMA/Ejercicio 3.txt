@@ -1,0 +1,80 @@
+// Canales de interacción con clientes
+chan pedido(int, text);
+chan entregaComida[C](text);
+
+// Canales de interacción del coordinador con vendedores
+chan avisoVendedor(int);
+chan siguiente[3](int, text);
+
+// Canal de interacción entre vendedores y cocineros
+chan pedidoCocina(int, text);
+
+process Cliente [id: 0..C-1]
+{
+    text orden;
+    text comida;
+
+    // Realiza el pedido y espera su entrega
+    send pedido(id, orden);
+    receive entregaComida[id](comida);
+}
+
+process Coordinador
+{
+    int idVendedor, idCliente;
+    text ordenAux;
+
+    while (true)
+    {
+        receive avisoVendedor(idVendedor);
+
+        if (empty(pedido))
+        {
+            idCliente = -1;
+            ordenAux = "";
+        }
+        else
+        {
+            receive pedido(idCliente, ordenAux);
+        }
+
+        // Le responde al vendedor asignado
+        send siguiente[idVendedor](idCliente, ordenAux);
+    }
+}
+
+process Vendedor [id: 0..2]
+{
+    int idCliente;
+    text orden;
+
+    while (true)
+    {
+        send avisoVendedor(id);
+        receive siguiente[id](idCliente, orden);
+
+        if (idCliente <> -1)
+        {
+            send pedidoCocina(idCliente, orden);
+        }
+        else
+        {
+            delay(random(60, 180)); // No hay pedidos, repone bebidas (1 a 3 minutos)
+        }
+    }
+}
+
+process Cocinero [id: 0..1]
+{
+    int idCliente;
+    text plato, orden;
+
+    while (true)
+    {
+        receive pedidoCocina(idCliente, orden);
+        plato = cocinar(orden);
+
+        // Entrega plato al cliente
+        send entregaComida[idCliente](plato);
+    }
+}
