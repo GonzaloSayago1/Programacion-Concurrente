@@ -1,0 +1,70 @@
+chan pedidoCaja(int);
+chan respuestaCaja[P](int);
+chan terminoAtencion(int);
+//Canales de atencion por caja
+chan filaCaja[5](int);
+chan esperaComprobante[P](text);
+
+process cliente[id: 0..P-1]
+{
+    int cajaAsignada;
+    text comprobante;
+
+    //Solicita caja al coordinador
+    sned pedidoCaja(id);
+    receive respuestaCaja[id](cajaAsignada);
+
+    //Espera atencion en la caja asignada
+    send filaCaja[cajaAsignada](id);
+    receive esperaComprobante[id](comprobante);
+}
+
+process coordinador()
+{
+    int esperandoCaja[5] = ((5) 0);
+    int idCliente, idCaja;
+    int min, cajaMin;
+
+    while(true)
+    {
+        //Verifica si hay clientes solicitando caja
+        if(not empty(pedidoCaja)) ->
+            receive pedidoCaja(idCliente);
+            min = esperandoCaja[0];
+            cajaMin = 0;
+            for i: 1 to 4
+            {
+                if(esperandoCaja[i] < min)
+                {
+                    min = esperandoCaja[i];
+                    cajaMin = i;
+                }
+            }
+
+            //Aumenta contador y asigna caja al cliente
+            esperandoCaja[cajaMin]++;
+            send respuestaCaja[idCliente](cajaMin);
+
+        //Decrementa clientes esperando
+        [] (not empty(terminoAtencion)) ->
+            receive terminoAtencion(idCaja);
+            esperandoCaja[idCaja]--;
+        fi
+    }
+}
+
+process caja(id: 0..4)
+{
+    int idCliente;
+    text comprobante;
+
+    while(true)
+    {
+        receive filaCaja[id](idCliente);
+        comprobante = procesarPago();
+        send esperaComprobante[idCliente](comprobante);
+
+        //Notifica al coordinador que termino de atender
+        send terminoAtencion(id);
+    }
+}
