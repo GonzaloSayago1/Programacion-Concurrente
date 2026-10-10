@@ -1,0 +1,139 @@
+A)
+chan solicitudes(text);
+
+process administrativo[id: 0..N-1]
+{
+    text documento;
+    while(true)
+    {
+        documento = generarDocumento();
+        send solicitudes(documento);
+    }
+}
+
+process impresora[id: 0..2]
+{
+    text doc;
+    while(true)
+    {
+        receive solicitudes(doc);
+        imprimir(doc);
+    }
+}
+
+
+B)
+chan solicitudes(text);
+chan importantes(text);
+chan avisos(bool);
+chan siguiente[3](text);
+chan disponibles(int); //Guarda id de impresoras disponibles
+
+process administrativo[id: 0..N-1]
+{
+    text documento;
+    while(true)
+    {
+        documento = generarDocumento();
+        send solicitudes(documento);
+        send avisos(true); //Avisa que hay algo
+    }
+}
+
+process director
+{
+    text documento;
+
+    while(true)
+    {
+        documento = generarDocumento();
+        send importantes(documento);
+        send avisos(true); //Avisa que hay algo
+    }
+}
+
+process coordinador
+{
+    bool ok;
+    int idImpresora;
+    text doc;
+
+    while(true)
+    {
+        receive avisos(ok);
+
+        if(not empty(importantes)) ->
+            receive importantes(doc);
+        [] ((not empty(solicitudes)) and (empty(importantes))) ->
+            receive solicitudes(doc);
+        fi
+
+        //Espera que se desocupe una impresora
+        receive disponibles(idImpresora)
+        send siguiente[idImpresora](doc);
+    }
+}
+
+process impresora[id: 0..2]
+{
+    text doc;
+
+    while(true)
+    {
+        //Avisa que esta disponible y espera en su canal privado
+        send disponibles(id);
+        receive siguiente[id](doc);
+
+        imprimir(doc);
+    }
+}
+
+
+
+C)
+chan solicitudes(text);
+chan disponibles(int);
+chan siguiente[3](text);
+
+process administrativo[id: 0..N-1]
+{
+    text documento;
+    for i: 1 to 10
+    {
+        documento = generarDocumento();
+        send solicitudes(documento);
+    }
+}
+
+process Coordinador
+{
+    int idImp;
+    text doc;
+
+    for i: 1 to (N * 10)
+    {
+        receive solicitudes(doc);
+        receive disponibles(idImp);
+        send siguiente[idImp](doc);
+    }
+
+    // Espera a que cada una de las 3 impresoras pida trabajo y le manda terminar
+    for i: 1 to 3
+    {
+        receive disponibles(idImp);
+        send siguiente[idImp]("TERMINAR");
+    }
+}
+
+process impresora[id: 0..2]
+{
+    text doc = "";
+
+    while(doc != "TERMINAR")
+    {
+        send disponibles(id);
+        receive siguiente[id](doc);
+
+        if(doc != "TERMINAR") {imprimir(doc)}
+    }
+}
