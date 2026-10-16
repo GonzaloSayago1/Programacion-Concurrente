@@ -1,0 +1,49 @@
+process preparador
+{
+    text muestra;
+    while(true)
+    {
+        muestra = prepararMuestra();
+        admin!reportes(muestra);
+    }
+}
+
+process armador
+{
+    text res, muestra;
+    while(true)
+    {
+        //Solicita muestra al admin
+        admin!pedido();
+        admin?muestras(muestra);
+
+        //Envia muestra al analista
+        analista!analisis(muestra);
+
+        //Espera resultado
+        analista?resultados(res);
+    }
+}
+
+process analista
+{
+    text muestra, res;
+    while(true)
+    {
+        armador?analisis(muestra);
+        res = analizar(muestra);
+        armador!resultados(res);
+    }
+}
+
+process admin
+{
+    cola buffer;
+    text muestra;
+
+    do preparador?reportes(muestra) -> push(buffer, muestra);
+        [] not empty(buffer); armador?pedidos() ->
+                                                pop(buffer, muestra);
+                                                armador!muestras(muestra);
+    od
+}
