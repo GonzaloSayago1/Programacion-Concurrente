@@ -1,0 +1,70 @@
+B)
+process examinador[id: 0..R-1]
+{
+    text rep, res;
+    while(true)
+    {
+        rep = generarReporte();
+        analizador!reportes(rep, id);
+        analizador?respuestas(res);
+    }
+}
+
+process analizador
+{
+    int idExaminador;
+    text rep, res;
+    while(true)
+    {
+        examinador[*]?reportes(rep, idExaminador);
+        res = resolver(rep);
+        examinador[idExaminador]!respuestas(res);
+    }
+}
+
+
+
+C)
+process admin
+{
+    cola fila;
+    text rep;
+    int idExaminador;
+    while(true)
+    {
+        do examinador[*]?reportes(rep, idExaminador) -> push(fila, (rep, idExaminador));
+            [] not empty(fila); analizador?pedido() ->
+                                            pop(fila, (rep, idExaminador));
+                                            analizador!reportes(rep, idExaminador);
+        od
+    }
+}
+
+process examinador[id: 0..R-1]
+{
+    text rep, res;
+    while(true)
+    {
+        rep = generarReporte();
+        admin!reportes(rep, id);
+        analizador?respuestas(res);
+    }
+}
+
+
+process analizador
+{
+    int idExaminador;
+    text rep, res;
+    while(true)
+    {
+        admin!pedido(); //Solicita pedido al admin
+        admin?respuestas(rep, idExaminador); //Espera respuesta
+        res = resolver(rep);
+        examinador[idExaminador]!respuestas(res); //Devuelve respuesta al examinador especifico
+    }
+}
+
+
+
+D) Necesitaria un proceso administrador que vaya almacenando los reportes generados por los examinadores en un buffer para maximizar la concurrencia. Sin este buffer el examinador tendria que esperar que el analizador termine de resolver el reporte para poder continuar buscando virus.
