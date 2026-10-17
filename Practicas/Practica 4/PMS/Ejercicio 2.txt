@@ -1,49 +1,59 @@
-process preparador
+process Preparador
 {
     text muestra;
-    while(true)
+
+    while (true)
     {
         muestra = prepararMuestra();
-        admin!reportes(muestra);
+        Admin!enviarMuestra(muestra);
     }
 }
 
-process armador
-{
-    text res, muestra;
-    while(true)
-    {
-        //Solicita muestra al admin
-        admin!pedido();
-        admin?muestras(muestra);
-
-        //Envia muestra al analista
-        analista!analisis(muestra);
-
-        //Espera resultado
-        analista?resultados(res);
-    }
-}
-
-process analista
+process Armador
 {
     text muestra, res;
-    while(true)
+
+    while (true)
     {
-        armador?analisis(muestra);
-        res = analizar(muestra);
-        armador!resultados(res);
+        //Solicita la siguiente muestra al Admin
+        Admin!pedirMuestra();
+        Admin?recibirMuestra(muestra);
+
+        //Arma el set y se lo envía al analista
+        muestra = armarSet();
+        Analista!analisis(muestra);
+
+        //Espera el resultado para archivarlo
+        Analista?resultado(res);
+        archivar(res);
     }
 }
 
-process admin
+process Analista
+{
+    text muestra, res;
+
+    while (true)
+    {
+        //Espera una muestra para analizar
+        Armador?analisis(muestra);
+        res = analizar(muestra);
+
+        //devuelve el resultado al armador
+        Armador!resultado(res);
+    }
+}
+
+process Admin
 {
     cola buffer;
     text muestra;
 
-    do preparador?reportes(muestra) -> push(buffer, muestra);
-        [] not empty(buffer); armador?pedidos() ->
-                                                pop(buffer, muestra);
-                                                armador!muestras(muestra);
+    do Preparador?enviarMuestra(muestra) ->
+        push(buffer, muestra);
+
+    [] not empty(buffer); Armador?pedirMuestra() ->
+        pop(buffer, muestra);
+        Armador!recibirMuestra(muestra);
     od
 }

@@ -1,0 +1,162 @@
+A)
+process Alumno[id: 0..N-1]
+{
+    text exam, res;
+
+    exam = realizarExamen();
+    Admin!entregas(exam, id);
+    Profesor?resultados(res);
+}
+
+process Profesor
+{
+    text exam, res;
+    int idAlumno;
+
+    for i: 1 to N
+    {
+        Admin!pedidos();
+        Admin?examenes(exam, idAlumno);
+        res = corregir(exam);
+        Alumno[idAlumno]!resultados(res);
+    }
+}
+
+process Admin
+{
+    text exam
+    int idAlumno;
+    cola colaExamenes;
+    int cantEntregas = 0;
+
+    do cantEntregas < N; Alumno[*]?entregas(exam, idAlumno) ->
+        push(colaExamenes, (exam, idAlumno));
+        cantEntregas++;
+    [] not empty(cola); profesor?pedidos() ->
+        pop(colaExamenes, (exam, idAlumno));
+        Profesor!examenes(exam, idAlumno);
+    od
+}
+
+
+
+B)
+process Alumno [id: 0..N-1]
+{
+    text exam, res;
+
+    exam = realizarExamen();
+    Admin!entregas(exam, id);
+    Profesor[*]?resultados(res);
+}
+
+process Profesor [id: 0..P-1]
+{
+    text exam, res;
+    int idAlumno;
+
+    Admin!pedidos(id);
+    Admin?examenes(exam, idAlumno);
+
+    while (idAlumno != -1)
+    {
+        res = corregir(exam);
+        Alumno[idAlumno]!resultados(res);
+
+        // Pide el siguiente examen
+        Admin!pedidos(id);
+        Admin?examenes(exam, idAlumno);
+    }
+}
+
+process Admin
+{
+    text exam;
+    int idAlumno, idProfesor;
+    cola colaExamenes;
+    int cantEntregas = 0;
+
+    do cantEntregas < N; Alumno[*]?entregas(exam, idAlumno) ->
+        push(colaExamenes, (exam, idAlumno));
+        cantEntregas++;
+
+    [] not empty(colaExamenes); Profesor[*]?pedidos(idProfesor) ->
+        pop(colaExamenes, (exam, idAlumno));
+        Profesor[idProfesor]!examenes(exam, idAlumno);
+    od
+
+    // Bloque de finalización
+    for i: 1 to P
+    {
+        Profesor[*]?pedidos(idProfesor);
+        Profesor[idProfesor]!examenes("", -1);
+    }
+}
+
+
+
+C)
+process Alumno [id: 0..N-1]
+{
+    text exam, res;
+
+    Admin!llegada() //Avisa que llego
+    Admin?espera(); //Espera que lleguen todos
+    exam = realizarExamen();
+    Admin!entregas(exam, id);
+    Profesor[*]?resultados(res);
+}
+
+process Profesor [id: 0..P-1]
+{
+    text exam, res;
+    int idAlumno;
+
+    Admin!pedidos(id);
+    Admin?examenes(exam, idAlumno);
+
+    while (idAlumno != -1)
+    {
+        res = corregir(exam);
+        Alumno[idAlumno]!resultados(res);
+
+        // Pide el siguiente examen
+        Admin!pedidos(id);
+        Admin?examenes(exam, idAlumno);
+    }
+}
+
+process Admin
+{
+    text exam;
+    int idAlumno, idProfesor;
+    cola colaExamenes;
+    int cantEntregas = 0;
+
+    for i: 1 to N
+    {
+        Alumno[*]?llegada();
+    }
+
+    for i: 1 to N
+    {
+        Alumno[i-1]!espera();
+    }
+
+    do cantEntregas < N; Alumno[*]?entregas(exam, idAlumno) ->
+        push(colaExamenes, (exam, idAlumno));
+        cantEntregas++;
+
+    [] not empty(colaExamenes); Profesor[*]?pedidos(idProfesor) ->
+        pop(colaExamenes, (exam, idAlumno));
+        Profesor[idProfesor]!examenes(exam, idAlumno);
+    od
+
+    // Bloque de finalización
+    for i: 1 to P
+    {
+        Profesor[*]?pedidos(idProfesor);
+        Profesor[idProfesor]!examenes("", -1);
+    }
+}
+
