@@ -1,0 +1,89 @@
+A)
+process Persona[id: 0..P-1]
+{
+    Encargado!solicitud(id);
+    Encargado?acceso();
+
+    //Usa simulador
+    Encargado!finalizo();
+}
+
+process Encargado
+{
+    int idPersona;
+    for i: 1 to P
+    {
+        Persona[*]?solicitud(idPersona);
+        Persona[idPersona]!acceso();
+
+        //Espera que termine de usarlo
+        Persona[idPersona]?finalizo();
+    }
+}
+
+
+
+B)
+process Persona[id: 0..P-1]
+{
+    Encargado!solicitud();
+    Encargado?acceso();
+
+    //Usa simulador
+    Encargado!finalizo();
+}
+
+process Encargado
+{
+    int idPersona;
+    for i: 0 to P-1
+    {
+        Persona[i]?solicitud();
+        Persona[i]!acceso();
+
+        //Espera que termine de usarlo
+        Persona[i]?finalizo();
+    }
+}
+
+
+
+C)
+process Admin
+{
+    cola colaPersonas;
+    int idPersona;
+    int cantPersonas = 0;
+
+    do cantPersonas < P; Persona[*]?solicitud(idPersona) ->
+        push(colaPersonas, idPersona);
+        cantPersonas++;
+    [] not empty(colaPersonas); Encargado?pedido() ->
+        pop(colaPersonas, idPersona);
+        Encargado!acceso(idPersona);
+    od
+}
+
+process Encargado
+{
+    int idPersona;
+
+    for i: 1 to P
+    {
+        Admin!pedido();
+        Admin?acceso(idPersona);
+        Persona[idPersona]!acceso();
+
+        //Espera que termine de usarlo
+        Persona[idPersona]?finalizo();
+    }
+}
+
+process Persona[id: 0..P-1]
+{
+    Admin!solicitud(id);
+    Encargado?acceso();
+
+    //Usar simulador
+    Encargado!finalizo();
+}
