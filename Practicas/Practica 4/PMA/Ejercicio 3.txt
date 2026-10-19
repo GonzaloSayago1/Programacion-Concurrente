@@ -1,12 +1,12 @@
-// Canales de interacción con clientes
+//Canales de interacción con clientes
 chan pedido(int, text);
 chan entregaComida[C](text);
 
-// Canales de interacción del coordinador con vendedores
+//Canales de interacción del coordinador con vendedores
 chan avisoVendedor(int);
 chan siguiente[3](int, text);
 
-// Canal de interacción entre vendedores y cocineros
+//Canal de interacción entre vendedores y cocineros
 chan pedidoCocina(int, text);
 
 process Cliente [id: 0..C-1]
@@ -30,6 +30,7 @@ process Coordinador
 
         if (empty(pedido))
         {
+            //Manda datos basura avisando que no hay nada
             idCliente = -1;
             ordenAux = "";
         }

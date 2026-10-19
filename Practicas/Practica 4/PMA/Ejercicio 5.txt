@@ -126,14 +126,18 @@ process Coordinador
 
 process impresora[id: 0..2]
 {
-    text doc = "";
+    text doc;
+
+    send disponibles(id);
+    receive siguiente[id](doc);
 
     while(doc != "TERMINAR")
     {
+        imprimir(doc);
+
+        //Solicita pedido nuevamente
         send disponibles(id);
         receive siguiente[id](doc);
-
-        if(doc != "TERMINAR") {imprimir(doc)}
     }
 }
 
@@ -197,13 +201,17 @@ process Coordinador
 
 process impresora[id: 0..2]
 {
-    text doc = "";
+    text doc;
+
+    send disponibles(id);
+    receive siguiente[id](doc);
 
     while(doc != "TERMINAR")
     {
+        imprimir(doc);
+
+        //Solicita pedido nuevamente
         send disponibles(id);
         receive siguiente[id](doc);
-
-        if(doc != "TERMINAR") {imprimir(doc)}
     }
 }

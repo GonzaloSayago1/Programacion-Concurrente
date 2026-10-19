@@ -1,0 +1,42 @@
+process Espectador[id: 0..E-1]
+{
+    Admin!solicitud(id);
+    Admin?espera();
+
+    //Usa maquina expendedora
+    Admin!finalizo();
+}
+
+process Admin
+{
+    cola colaEspera;
+    bool maquinaLibre = true;
+    int cantEspectadores = 0;
+    int esperando = 0;
+
+    do cantEspectadores < E; Espectador[*]?solicitud(idEspectador) ->
+        if(maquinaLibre)
+        {
+            //Da acceso a la maquina al siguiente
+            Espectador[idEspectador]!espera();
+            maquinaLibre = false;
+        }
+        else {
+            //Si estan usando la maquina, espera en la cola
+            push(colaEspera, idEspectador);
+            esperando++;
+        }
+        cantEspectadores++;
+    [] maquinaLibre = false; Espectador[*]?finalizo() ->
+        if(esperando > 0)
+        {
+            //Despierta al siguiente
+            pop(colaEspera, sig);
+            Espectador[sig]!espera();
+            esperando--;
+        }
+        else {
+            maquinaLibre = true;
+        }
+    od
+}
