@@ -1,0 +1,40 @@
+procedure sistema is
+    Task type usuario;
+    arrayUsuario : array (1..U) of usuario;
+
+    Task servidor is
+        Entry pedido(documento: in text; ok: out boolean);
+    end servidor;
+
+    Task body servidor is
+    begin
+        loop
+            accept pedido(doc: in text; ok: out boolean) do
+                //Devuelve si esta aprobado o si tiene errores
+                ok:= revisarDocumento(doc);
+            end pedido;
+        end loop;
+    end servidor;
+
+    Task body usuario is
+        documento: text;
+        aprobado: boolean := false;
+    begin
+        documento = prepararDocumento();
+
+        while (not aprobado) loop
+            SELECT
+                servidor.pedido(documento, termino);
+                //Revisa correccion
+                if (not aprobado) then
+                    documento:= prepararDocumento();
+                end if;
+            OR DELAY 120.0
+                DELAY 60.0
+            end SELECT;
+        end loop;
+    end usuario;
+
+begin
+    null;
+end sistema;

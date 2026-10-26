@@ -52,13 +52,14 @@ procedure sistema is
                     timer.demorar();
                 end SELECT;
             else
+                //Le da prioridad a los entrys de terminar, para que no supere los 3 minutos
                 SELECT
-                    accept pedido2(señal: in text);
-                OR
                     accept terminar() do
                         //Reinicio variable
                         demorar:= false;
                     end terminar;
+                OR when(terminar'count = 0) =>
+                    accept pedido2(señal: in text);
                 end SELECT;
             end if;
         end loop;
