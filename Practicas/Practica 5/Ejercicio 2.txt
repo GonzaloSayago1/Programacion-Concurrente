@@ -66,3 +66,80 @@ begin
     null;
 end Banco;
 
+
+
+C)
+procedure Banco is
+    Task empleado is
+        Entry pedido(pago: in texto; res: out texto);
+    end empleado;
+
+    Task type cliente;
+
+    arrayClientes: array (1..N) of cliente;
+
+    Task body cliente is
+        comprobante: texto;
+    begin
+        SELECT
+            empleado.pedido("pago", comprobante);
+        ELSE
+            null;
+        end SELECT;
+    end cliente;
+
+    Task body empleado is
+        res: texto;
+        pago: texto;
+    begin
+        loop
+            accept pedido(pago: in texto; res: out texto) do
+                res := resolverPedido(pago);
+            end pedido;
+        end loop;
+    end empleado;
+
+begin
+    null;
+end Banco;
+
+
+
+D)
+procedure Banco is
+    Task empleado is
+        Entry pedido(pago: in texto; res: out texto);
+    end empleado;
+
+    Task type cliente;
+
+    arrayClientes: array (1..N) of cliente;
+
+    Task body cliente is
+        comprobante: texto;
+    begin
+        SELECT
+            empleado.pedido("pago", comprobante);
+        OR DELAY 600.0
+            SELECT
+                empleado.pedido("pago", comprobante);
+            ELSE
+                null;
+            end SELECT;
+        end SELECT;
+    end cliente;
+
+    Task body empleado is
+        res: texto;
+        pago: texto;
+    begin
+        loop
+            accept pedido(pago: in texto; res: out texto) do
+                res := resolverPedido(pago);
+            end pedido;
+        end loop;
+    end empleado;
+
+begin
+    null;
+end Banco;

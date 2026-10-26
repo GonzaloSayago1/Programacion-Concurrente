@@ -1,0 +1,76 @@
+procedure sistema is
+    Task central is
+        Entry pedido1(señal: in text);
+        Entry pedido2(señal: in text);
+        Entry terminar();
+    end central;
+
+    Task periferico1;
+    Task periferico2;
+
+    Task body periferico1 is
+    begin
+        loop
+            SELECT
+                central.pedido1("señal");
+            OR DELAY 120.0
+                //Descarta señal
+            end SELECT;
+        end loop;
+    end periferico1;
+
+    Task body periferico2 is
+    begin
+        loop
+            SELECT
+                central.pedido2("señal");
+            ELSE
+                DELAY 60.0;
+            END SELECT;
+        end loop;
+    end periferico2;
+
+    Task timer is
+        Entry demorar();
+    end timer;
+
+    Task body central is
+        señal: text;
+        demorar: boolean;
+    begin
+        //Toma señal de primer periferico
+        accept pedido1(señal: in text);
+        demorar:= false;
+        loop
+            if(not demorar) then
+                SELECT
+                    accept pedido1(señal: in text);
+                OR
+                    accept pedido2(señal: in text);
+                    //recibe solo señales de tipo 2
+                    demorar:= true;
+                    timer.demorar();
+                end SELECT;
+            else
+                SELECT
+                    accept pedido2(señal: in text);
+                OR
+                    accept terminar() do
+                        //Reinicio variable
+                        demorar:= false;
+                    end terminar;
+                end SELECT;
+            end if;
+        end loop;
+    end central;
+
+    Task body timer is
+    begin
+        accept demorar();
+        DELAY 180.0
+        central.terminar();
+    end timer;
+
+begin
+    null;
+end sistema;

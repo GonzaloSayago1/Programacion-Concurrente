@@ -1,0 +1,96 @@
+procedure guardia is
+    Task medico is
+        Entry pedidoCliente(pedido: in text; resp: out text);
+        Entry pedidoEnfermera(pedido: in text);
+    end medico;
+
+    Task type cliente;
+    Task type enfermera;
+    Task escritorio is
+        Entry pedidoEnfermera(pedido: in text);
+        Entry recibirPedido(pedido: out text);
+    end escritorio;
+    Task administrador;
+
+    arrCliente: array (1..P) of cliente;
+    arrEnfermera: array (1..E) of enfermera;
+
+    Task body cliente is
+        id: integer;
+        solicitud: text;
+        intentos: int;
+        atendido: boolean;
+        resp: text;
+    begin
+        intentos:= 0;
+        atendido:= false;
+        while (not atendido and intentos < 3) loop
+            SELECT
+                medico.pedidoCliente(solicitud, resp);
+                atendido:= true;
+            OR DELAY 300.0
+                intentos:= intentos + 1;
+                DELAY 600.0
+            end SELECT;
+        end loop;
+    end cliente;
+
+    Task body enfermera is
+        pedido: text;
+    begin
+        loop
+            SELECT
+                medico.pedidoEnfermera(pedido: in text);
+            ELSE
+                //Deja nota en escritorio
+                escritorio.pedidoEnfermera(pedido: in text);
+            end SELECT;
+        end loop;
+    end enfermera;
+
+    Task body escritorio is
+        pedido: text;
+        colaPedidos: cola;
+    begin
+        loop
+            SELECT
+                accept pedidoEnfermera(pedidos: in text) do
+                    push(colaPedidos, pedido);
+                end pedidoEnfermera;
+            OR when(not empty colaPedidos) =>
+                accept recibirPedido(pedido: out text) do
+                    pedido = pop(colaPedidos);
+                end recibirPedido;
+            end SELECT;
+        end loop;
+    end escritorio;
+
+    Task body administrador is
+        pedido: text;
+    begin
+        loop
+            escritorio.recibirPedido(pedido);
+            medico.pedidoAdmin(pedido);
+        end loop;
+    end administrador;
+
+    Task body medico is
+        pedidoAux: text;
+    begin
+        loop
+            SELECT
+                accept pedidoCliente(pedido: in text; resp: out text) do
+                    pedidoAux:= pedido;
+                    resp:= atender(pedidoAux);
+                end pedidoCliente;
+            OR when(pedidoCliente'count = 0) =>
+                accept pedidoEnfermera(pedido: in text);
+            OR when(pedidoCliente'count = 0) =>
+                accept pedidoAdmin(pedido: in text);
+            end SELECT;
+        end loop;
+    end medico;
+
+begin
+    null;
+end guardia;
