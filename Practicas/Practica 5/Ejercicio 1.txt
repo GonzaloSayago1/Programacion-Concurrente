@@ -1,0 +1,138 @@
+procedure Puente is
+    Task type auto;
+    Task type camioneta;
+    Task type camion;
+
+    Task administrador is
+        entry pedidoAuto;
+        entry pedidoCamioneta;
+        entry pedidoCamion;
+        entry salidas(peso: in int);
+    end administrador;
+
+    Task body auto is begin
+        administrador.pedidoAuto();
+        //Pasa por el puente;
+        administrador.salidas(1);
+    end auto;
+
+    Task body camioneta is begin
+        administrador.pedidoCamioneta();
+        //Pasa por el puente;
+        administrador.salidas(2);
+    end camioneta;
+
+    Task body camion is begin
+        administrador.pedidoCamion();
+        //Pasa por el puente;
+        administrador.salidas(3);
+    end camion;
+
+    arrAutos: array (1..A) of auto;
+    arrCamionetas: array (1..B) of camioneta;
+    arrCamiones: array (1..C) of camion;
+
+    Task body administrador is
+        pesoRestante: integer;
+        aux: integer;
+    begin
+        pesoRestante := 5;
+        loop
+            SELECT
+                when(pesoRestante - 1 >= 0) =>
+                    accept pedidoAuto do
+                        pesoRestante := pesoRestante - 1;
+                    end pedidoAuto;
+                OR
+                when(pesoRestante - 2 >= 0) =>
+                    accept pedidoCamioneta do
+                        pesoRestante := pesoRestante - 2;
+                    end pedidoCamioneta;
+                OR
+                when(pesoRestante - 3 >= 0) =>
+                    accept pedidoCamion do
+                        pesoRestante := pesoRestante - 3;
+                    end pedidoCamion;
+                OR
+                    accept salidas(aux: in integer) do
+                        pesoRestante := pesoRestante + aux;
+                    end salidas;
+            end SELECT;
+        end loop;
+    end administrador;
+
+begin
+    null;
+end Puente;
+
+
+
+B)
+procedure Puente is
+
+    task type Auto;
+    task type Camioneta;
+    task type Camion;
+
+    task Administrador is
+        entry PedidoAuto;
+        entry PedidoCamioneta;
+        entry PedidoCamion;
+        entry Salidas(peso: in integer);
+    end Administrador;
+
+    arrAutos: array (1..A) of Auto;
+    arrCamionetas: array (1..B) of Camioneta;
+    arrCamiones: array (1..C) of Camion;
+
+    task body Auto is
+    begin
+        Administrador.PedidoAuto;
+        -- Cruza el puente
+        Administrador.Salidas(1);
+    end Auto;
+
+    task body Camioneta is
+    begin
+        Administrador.PedidoCamioneta;
+        -- Cruza el puente
+        Administrador.Salidas(2);
+    end Camioneta;
+
+    task body Camion is
+    begin
+        Administrador.PedidoCamion;
+        -- Cruza el puente
+        Administrador.Salidas(3);
+    end Camion;
+
+    task body Administrador is
+        pesoRestante: integer := 5;
+    begin
+        loop
+            select
+                when (pedidoCamion'count = 0 and pesoRestante >= 1) =>
+                    accept PedidoAuto do
+                        pesoRestante := pesoRestante - 1;
+                    end PedidoAuto;
+            or
+                when (pedidoCamion'count = 0 and pesoRestante >= 2) =>
+                    accept PedidoCamioneta do
+                        pesoRestante := pesoRestante - 2;
+                    end PedidoCamioneta;
+            or
+                when (pesoRestante >= 3) =>
+                    accept PedidoCamion do
+                        pesoRestante := pesoRestante - 3;
+                    end PedidoCamion;
+            or
+                accept Salidas(peso: in integer) do
+                    pesoRestante := pesoRestante + peso;
+                end Salidas;
+            end select;
+        end loop;
+    end Administrador;
+
+begin
+    null;
+end Puente;
