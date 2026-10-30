@@ -1,0 +1,103 @@
+procedure Juego is
+
+    task type Coordinador is
+        entry Identificador(id: in integer);
+        entry Llegada;
+        entry Comenzar;
+        entry EntregarTotal(subtotal: in integer);
+    end Coordinador;
+
+    task type Persona is
+        entry Identificador(idPersona: in integer; idG: in integer);
+        entry Notificar(grupoGanador: in integer);
+    end Persona;
+
+    task Administrador is
+        entry Termino(idGrupo: in integer; total: in integer);
+    end Administrador;
+
+    arrCoordinadores: array (1..5) of Coordinador;
+    arrPersonas: array (1..20) of Persona;
+
+    task body Persona is
+        miId, miGrupo: integer;
+        subtotal: integer := 0;
+        ganador: integer;
+    begin
+        accept Identificador(idPersona: in integer; idG: in integer) do
+            miId := idPersona;
+            miGrupo := idG;
+        end Identificador;
+
+        //Barrera de equipo
+        arrCoordinadores(miGrupo).Llegada;
+        arrCoordinadores(miGrupo).Comenzar;
+
+        for i in 1..15 loop
+            subtotal := subtotal + Moneda();
+        end loop;
+        arrCoordinadores(miGrupo).EntregarTotal(subtotal);
+
+        //Espera que el administrador le notifique el grupo ganador
+        accept Notificar(grupoGanador: in integer) do
+            ganador := grupoGanador;
+        end Notificar;
+    end Persona;
+
+    task body Coordinador is
+        miIdGrupo: integer;
+        totalGrupo: integer := 0;
+    begin
+        accept Identificador(id: in integer) do
+            miIdGrupo := id;
+        end Identificador;
+
+        for i in 1..4 loop
+            accept Llegada;
+        end loop;
+
+        for i in 1..4 loop
+            accept Comenzar;
+        end loop;
+
+        //Recibe las monedas recolectadas por las 4 personas
+        for i in 1..4 loop
+            accept EntregarTotal(subtotal: in integer) do
+                totalGrupo := totalGrupo + subtotal;
+            end EntregarTotal;
+        end loop;
+
+        //Notifica al administrador
+        Administrador.Termino(miIdGrupo, totalGrupo);
+    end Coordinador;
+
+    task body Administrador is
+        idMax, montoMax: integer := -1;
+    begin
+        for i in 1..5 loop
+            accept Termino(idGrupo: in integer; total: in integer) do
+                if (total > montoMax) then
+                    montoMax := total;
+                    idMax := idGrupo;
+                end if;
+            end Termino;
+        end loop;
+
+        //Notifica a las 20 personas
+        for i in 1..20 loop
+            arrPersonas(i).Notificar(idMax);
+        end loop;
+    end Administrador;
+
+    grupo: integer;
+begin
+    for g in 1..5 loop
+        arrCoordinadores(g).Identificador(g);
+    end loop;
+
+    -- Asigna id y grupo a las 20 personas (4 por grupo)
+    for i in 1..20 loop
+        grupo := asignarGrupo(); //Asumo que existe funcion que asigna equitativamente
+        arrPersonas(i).Identificador(i, grupo);
+    end loop;
+end Juego;
