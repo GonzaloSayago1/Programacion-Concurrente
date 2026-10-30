@@ -1,0 +1,50 @@
+procedure Sistema is
+    Task type worker is
+        Entry iniciar;
+    end worker;
+
+    Task coordinador is
+        Entry terminar(valor: in integer);
+    end coordinador;
+
+    arrWorkers: array (1..10) of worker;
+
+    Task body worker is
+        arrTrabajo: array (1..100000) of integer; //Asumo que esta inicializado
+        valor: integer;
+    begin
+        //Espera que el coordinador le avise para iniciar
+        accept iniciar;
+
+        valor:= 0;
+        for i in 1..100000 loop
+            valor:= valor + arrTrabajo(i);
+        end loop;
+
+        coordinador.terminar(valor);
+    end worker;
+
+    Task body coordinador is
+        total: integer;
+        promedio: float;
+    begin
+        for i in 1..10 loop
+            arrWorkers(i).iniciar;
+        end loop;
+
+        //Espera resultados individuales y realiza calculo
+        total:= 0;
+        for i in 1..10 loop
+            accept terminar(valor: in integer) do
+                total:= total + valor;
+            end terminar;
+        end loop;
+
+        //Calcula promedio
+        promedio:= total / 1000000;
+
+    end coordinador;
+
+begin
+    null;
+end Sistema;
