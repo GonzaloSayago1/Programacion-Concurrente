@@ -24,7 +24,7 @@ procedure Oficina is
             resultado:= obtenerVentas(idArticulo);
             Herramienta.informar(resultado);
 
-            //Informa que termino y espera
+            //Informa que termino y espera al siguiente articulo
             Herramienta.siguiente;
         end loop;
     end Sucursal;
