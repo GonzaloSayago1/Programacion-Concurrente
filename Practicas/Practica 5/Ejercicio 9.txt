@@ -24,12 +24,8 @@ procedure Recoleccion is
         end identificador;
         LOOP
             //Solicita trabajo
-            Aministrador.camionLibre(id);
-
-            //Recibe trabajo
-            accept recolectar(idReclamo: in integer) do
-                arrPersona(idReclamo).reclamo;
-            end recolectar;
+            Aministrador.camionLibre(id, idReclamo);
+            arrPersona(idReclamo).reclamo;
         end LOOP;
     end Camion;
 
@@ -41,51 +37,36 @@ procedure Recoleccion is
             id:= pos;
         end identificador;
         while (not aceptado) loop
+            Administrador.sumarReclamo(id);
             SELECT
                 accept reclamo;
                 aceptado:= true;
             OR DELAY 900.0
-                Administrador.sumarReclamo(id);
+                null;
             end SELECT;
         end loop;
     end Persona;
 
     Task body Administrador is
-        idPesona, idCamion, max, posMax: integer
+        posMax: integer
         reclamos: array(1..P) of integer := 0; //Contador de reclamos
+        esperando: integer := 0;
     begin
         loop
             SELECT
-                accept camionLibre(id: in integer) do
-                    //Verifica si hay personas reclamando
-                    max:= -1; posMax:= -1;
-                    for i in 1..P loop
-                        if(reclamos(i) > max)
-                            max:= reclamos(i);
-                            posMax:= i;
-                        end if;
-                    end loop;
-                    if (posMax <> -1)
-                        arrCamion(id).recolectar(posMax);
-                        reclamos(posMax):= -1; //De esta forma no lo voy a tener más en cuenta
-                    else
-                    //Se encola y espera que lo llamen
-                        push(colaCamiones, id);
-                    end if;
+                WHEN (esperando > 0) => accept camionLibre(id: in integer; idReclamo: out integer) do
+                    posMax:= obtenerPosicionMaxima(reclamos);
+                    idReclamo:= posMax;
+                    reclamos(posMax):= -1; //De esta forma no lo voy a tener más en cuenta
+                    esperando:= esperando - 1; //Decrementa una persona esperando
 
                 end camionLibre;
             OR
                 accept sumarReclamo(id: in integer) do
-                    reclamos(i):= reclamos(i) + 1;
-                    if (colaCamiones.size > 0)
-                        //Asumo que esta funcion existe y me devuelve la posicion del maximo
-                        maxReclamos:= obtenerPosDelMaximo(reclamos);
-
-                        //Asigno trabajo al camion
-                        idCamion:= pop(colaCamiones);
-                        reclamos(maxReclamos):= -1; //De esta forma no lo voy a tener más en cuenta
-                        arrCamion(idCamion).recolectar(maxReclamos);
+                    if (reclamos(i) = 0)
+                        esperando:= esperando + 1;
                     end if;
+                    reclamos(i):= reclamos(i) + 1;
                 end sumarReclamo;
             end SELECT;
         end loop;

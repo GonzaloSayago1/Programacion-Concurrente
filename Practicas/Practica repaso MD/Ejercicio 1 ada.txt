@@ -1,0 +1,41 @@
+procedure Sistema is
+    Task type Api is
+        Entry solicitud(compra: out integer; venta: out integer);
+    end Api;
+
+    Task BancoCentral is
+
+    end BancoCentral;
+
+    //Arreglos
+    arrApis: array (1..20) of Api;
+
+    Task body Api is
+        valorCompra, valorVenta: integer;
+    begin
+        LOOP
+            accept solicitud(compra: out integer; venta: out integer) do
+                compra:= valorCompra;
+                venta:= valorVenta;
+            end solicitud;
+        end LOOP;
+    end Api;
+
+    Task body BancoCentral is
+        compra, venta: integer;
+    begin
+        for i in 1..20 loop
+            SELECT
+                arrApis(i).solicitud(compra, venta);
+            OR DELAY 5.0
+                compra:= null;
+                venta:= null;
+            end SELECT;
+
+            //Informa datos de esa api
+            informar(i, compra, venta);
+        end loop;
+    end BancoCentral;
+begin
+    null;
+end Sistema;
