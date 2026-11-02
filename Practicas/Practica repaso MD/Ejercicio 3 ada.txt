@@ -1,0 +1,60 @@
+//Nota: Asumo que hay N articulos a procesar
+
+procedure Oficina is
+    Task Herramienta is
+        Entry informar(parcial: in integer);
+        Entry solicitarArticulo(id: out integer);
+        Entry siguiente;
+    end Herramienta;
+
+    Task type Sucursal is
+        Entry identificador(id: in integer);
+    end Sucursal;
+
+    arrSucursal: array (1..100) of Sucursal;
+
+    Task body Sucursal is
+        idArticulo, resultado:integer;
+    begin
+        for i in 1..N loop
+            //Solicita articulo;
+            Herramienta.solicitarArticulo(idArticulo);
+
+            //Envia resultado
+            resultado:= obtenerVentas(idArticulo);
+            Herramienta.informar(resultado);
+
+            //Informa que termino y espera
+            Herramienta.siguiente;
+        end loop;
+    end Sucursal;
+
+    Task body Herramienta is
+        idArticulo, total: integer;
+        articulos: array (1..N) of integer; //Contador de articulos
+    begin
+        for i in 1..N loop
+            idArticulo:= generarArticulo();
+            total:= 0;
+            for i in 1..200 loop
+                SELECT
+                    accept solicitarArticulo(id: out integer) do
+                        id:= idArticulo;
+                    end solicitarArticulo;
+                OR
+                    accept informar(parcial: in integer) do
+                        total:= total + parcial;
+                    end informar;
+                end SELECT;
+            end loop;
+            articulos(idArticulo):= total;
+
+            //Barrera para avanzar con el siguiente articulo
+            for i in 1..100 loop
+                accept siguiente;
+            end loop;
+        end loop;
+    end Herramienta;
+begin
+   null;
+end Oficina;
