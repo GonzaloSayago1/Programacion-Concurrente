@@ -1,0 +1,84 @@
+procedure Negocio is
+    Task type Persona is
+        Entry identificador(id: in integer);
+        Entry darAcceso;
+    end Persona;
+
+    Task Administrador is
+        Entry solicitarPago();
+        Entry termino;
+    end Administrador;
+
+    arrPersonas: array (1..P) of Persona;
+
+    Task body Persona is
+        cantBoletas, id: integer;
+        esJubilado: boolean;
+    begin
+        cantBoletas:= determinarCantidad();
+        esJubilado:= determinarSiEsJubilado();
+
+        accept identificador(pos: in integer) do
+            id:= pos;
+        end identificador;
+
+        Administrador.solicitarPago(id, cantBoletas, esJubilado);
+
+        //Espera que el administrador le de acceso a la caja
+        accept darAcceso;
+        //Usa caja
+
+        //Avisa que termino de usarla
+        Administrador.termino;
+    end Persona;
+
+    Task body Administrador is
+        cajaLibre: boolean := true;
+        esperando: integer := 0;
+        sig: integer;
+        colaEspera, colaMenosBoletas, colaJubilados: cola;
+    begin
+        for i in 1..P loop
+            SELECT
+                accept solicitarPago(id: in integer; cantBoletas: in integer; jubilado: in boolean) do
+                    if(cajaLibre)
+                        cajaLibre:= false;
+                        arrPersonas(i).darAcceso;
+                    else
+                        esperando:= esperando + 1;
+                        if(jubilado)
+                            push(colaJubilados, id);
+                        else if (cantBoletas < 5)
+                            push(colaMenosBoletas, id);
+                        else
+                            push(colaEspera, id);
+                        end if;
+                    end if;
+                end solicitarPago;
+            OR
+                accept termino do
+                    if(esperando > 0)
+
+                        if(colaJubilados.size() > 0)
+                            sig:= pop(colaJubilados);
+                        else if(colaMenosBoletas.size() > 0)
+                            sig:= pop(colaMenosBoletas);
+                        else
+                            sig:= pop(colaEspera);
+                        end if;
+
+                        //Da el paso a la siguiente persona
+                        arrPersonas(i).darAcceso;
+                        esperando:= esperando - 1;
+                    else
+                        cajaLibre:= true;
+                    end if;
+                end termino;
+            end SELECT;
+        end loop;
+    end Administrador;
+begin
+    for i in 1..P loop
+        arrPersonas(i).identificador(i);
+    end loop;
+end Negocio;

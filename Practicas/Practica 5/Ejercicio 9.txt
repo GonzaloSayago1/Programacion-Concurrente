@@ -56,7 +56,7 @@ procedure Recoleccion is
             SELECT
                 WHEN (esperando > 0) => accept camionLibre(id: in integer; idReclamo: out integer) do
                     posMax:= obtenerPosicionMaxima(reclamos);
-                    idReclamo:= posMax;
+                    idReclamo:= posMax; //Rendezvous
                     reclamos(posMax):= -1; //De esta forma no lo voy a tener más en cuenta
                     esperando:= esperando - 1; //Decrementa una persona esperando
 
