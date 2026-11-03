@@ -1,0 +1,79 @@
+A) PMA
+chan pedidos(int, text);
+chan respuestas[100](text);
+
+process impresora[id: 0..4]
+{
+    int idEmpleado;
+    text doc;
+    text resultado;
+
+    while(true)
+    {
+        receive pedidos(idEmpleado, doc);
+        resultado = imprimir(doc);
+        send respuestas[idEmpleado](resultado);
+    }
+}
+
+process Empleado[id: 0..99]
+{
+    text doc;
+    text resp;
+    while (true)
+    {
+        doc = generarDocumento();
+        send pedidos(id, doc);
+        receive respuestas[id](resp);
+    }
+}
+
+
+
+B) PMS
+//Canales: solicitudes, asignada, finalizo
+process Admin
+{
+    cola impresorasLibres; //Asumo que esta inicializada
+    cola colaEspera;
+    int idImpresora, idEmpleado;
+
+    while (true)
+    {
+        //Recibe solicitudes y avisos de finalización de forma no deterministica
+        do Empleado[*]?solicitudes(idEmpleado) ->
+            if(impresorasLibres.size() > 0) {
+                pop(impresorasLibres, idImpresora);
+                Empleado[idEmpleado]!.asignada(idImpresora);
+            }
+            else {
+                push(colaEspera, idEmpleado);
+            }
+        [] Empleado[*]?finalizo(idImpresora) ->
+            if(colaEspera.size() > 0){
+                pop(colaEspera, idEmpleado);
+                Empleado[idEmpleado]!.asignada(idImpresora);
+            }
+            else {
+                push(impresorasLibres, idImpresora);
+            }
+        od
+    }
+}
+
+process Empleado[id: 1..100]
+{
+    int idImpresora;
+
+    while (true)
+    {
+        Admin!solicitudes(id);
+        Admin?asignada(idImpresora);
+
+        //Usa impresora
+        usarImpresora(idImpresora);
+
+        //Avisa que termino
+        Admin!finalizo(idImpresora)
+    }
+}
