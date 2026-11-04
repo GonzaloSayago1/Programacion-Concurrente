@@ -1,0 +1,77 @@
+chan avisos(boolean);
+chan solicitudes(int, int, boolean);
+chan termino(boolean)
+chan acceso[P](boolean);
+
+process Persona[id: 1..P]
+{
+    int cantidadBoletas = determinarCantidad();
+    boolean esJubilado = determinarJubilacion();
+    boolean ok;
+
+    //Solicita acceso a la caja
+    send avisos(true);
+    send solicitudes(id, cantidadBoletas, esJubilado);
+
+    //Recibe acceso
+    receive acceso[id](ok);
+    usarCaja();
+
+    //Avisa que termino
+    send avisos(true);
+    send termino(true);
+}
+
+process Administrador
+{
+    int idPersona, cantidadBoletas, esperando, sig;
+    boolean jubilado, ok;
+    boolean libre = true;
+    cola colaEspera, colaBoletas, colaJubilado;
+
+    esperando = 0;
+
+    for i: 1 to (P * 2) do
+    {
+        receive avisos(ok);
+
+        if(not empty(solicitudes)) ->
+            receive solicitudes(idPersona, cantidadBoletas, jubilado);
+            if(libre){
+                libre = false;
+                send acceso[idPersona](true);
+            }
+            else {
+                esperando++;
+                if(jubilado){
+                    push(colaJubilado, idPersona);
+                }
+                else if(cantidadBoletas < 5){
+                    push(colaBoletas, idPersona);
+                }
+                else {
+                    push(colaEspera, idPersona);
+                }
+            }
+        [] (not empty(termino)) ->
+            receive termino(ok);
+            if(esperando > 0){
+                if(not empty(colaJubilado)){
+                    pop(colaJubilado, sig);
+                }
+                else if(not empty(colaBoletas)){
+                    pop(colaBoletas, sig);
+                }
+                else {
+                    pop(colaEspera, sig);
+                }
+
+                esperando--;
+                send acceso[sig](true);
+            }
+            else {
+                //Libera caja
+                libre = true;
+            }
+    }
+}

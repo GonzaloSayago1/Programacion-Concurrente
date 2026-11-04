@@ -1,0 +1,43 @@
+//Puertos usados: solicitud, acceso y termino
+
+process Persona[id: 1..P]
+{
+    //Solicta acceso a la terminal
+    Administrador!solicitud(id);
+
+    //Usa terminal
+    Administrador?acceso();
+    usarTerminal();
+
+    //Avisa que termino de usar la terminal
+    Administrador!termino();
+}
+
+process Administrador
+{
+    boolean libre = true;
+    int idPersona;
+    int cantSolicitudes = 0;
+    int cantTermino = 0;
+    cola colaEspera;
+
+    do (cantSolicitudes < P); Persona[*]?solicitud(idPersona) ->
+        cantSolicitudes++;
+        if(libre){
+            libre = false;
+            Persona[idPersona]!acceso();
+        }
+        else {
+            push(colaEspera, idPersona);
+        }
+    [] (cantTermino < P); Persona[*]?termino() ->
+        cantTermino++;
+        if(colaEspera.size() > 0){
+            pop(colaEspera, sig);
+            Persona[sig]!acceso();
+        }
+        else {
+            libre = true;
+        }
+    od
+}
