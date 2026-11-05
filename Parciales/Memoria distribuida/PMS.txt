@@ -1,0 +1,40 @@
+//Enunciado: En una empresa de telefonia hay un empleado para atender por mail a C clientes que van a tramitar la compra de una linea telefonica. Cada cliente hace un único trámite enciando sus datos y esperando el número de la línea comprada. El empleado atiende a los trámites de los clientes de acuerdo con el orden en que se hicieron. Nota: Todos los procesos deben terminar; No usar procesos que no sean necesarios.
+
+process Cliente[id: 1..C]
+{
+    text tramite, comprobante;
+    tramite = generarTramite();
+    Administrador!solicitud(id, tramite);
+    Empleado?respuesta(comprobante)
+}
+
+process Empleado
+{
+    int idCliente;
+    text tramite, comprobante;
+
+    for i:= 1 to C do
+    {
+        Administrador!pedido();
+        Administrador?trabajo(idCliente, tramite);
+        comprobante = generarComprobante(tramite);
+        Cliente[idCliente]!respuesta(comprobante);
+    }
+
+}
+
+process Administrador
+{
+    int idCliente, pedidosCli;
+    text tramite;
+    pedidosCli = 0;
+    pedidosEmp = 0;
+
+    do (pedidosCli < C); Cliente[*]?solicitud(idCliente, tramite) ->
+        push(colaEspera, (idCliente, tramite));
+        pedidosCli++;
+    [] not empty(colaEspera); Empleado?pedido() ->
+        pop(colaEspera, (idCliente, tramite));
+        Empleado!trabajo(idCliente, tramite);
+    od
+}
