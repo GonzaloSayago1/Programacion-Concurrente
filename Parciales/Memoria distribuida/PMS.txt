@@ -38,3 +38,48 @@ process Administrador
         Empleado!trabajo(idCliente, tramite);
     od
 }
+
+
+
+//Enunciado: En un cosultorio hay un medico para atender 15 pacientes de acuerdo al orden de llegada. Cada paciente al llegar espera a que el medico lo atienda y le indique su tratamiento. Nota: Existe una funcion atender() que simula que el médico está atendiendo a un paciente; Todos los procesos deben terminar
+
+process Medico
+{
+    int idPaciente;
+    text tratamiento;
+
+    for i: 1 to 15
+    {
+        //Llama a un paciente
+        Administrador!pedido();
+        Administrador?pacientes(idPaciente);
+
+        //Atiende y diagnostica al paciente
+        atender(idPaciente);
+        Paciente[id]!atencion(tratamiento);
+    }
+}
+
+process Paciente[id: 1..15]
+{
+    text tratamiento;
+
+    //Solicita atencion
+    Administrador!solicitud(id);
+
+    Medico?atencion(tratamiento);
+}
+
+process Administrador
+{
+    int cantPacientes = 0;
+    int idPaciente;
+
+    do (cantPacientes < 15); Paciente[*]?solicitud(idPaciente) ->
+        push(colaEspera, idPaciente)
+        cantPacientes++;
+    [] not empty(colaEspera); Medico?pedido() ->
+        pop(colaEspera, idPaciente);
+        Medico!atencion(idPaciente);
+    od
+}
