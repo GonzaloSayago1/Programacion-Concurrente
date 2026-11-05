@@ -80,6 +80,6 @@ process Administrador
         cantPacientes++;
     [] not empty(colaEspera); Medico?pedido() ->
         pop(colaEspera, idPaciente);
-        Medico!atencion(idPaciente);
+        Medico!atencion(idPaciente);|
     od
 }
