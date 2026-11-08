@@ -1,0 +1,47 @@
+//Enunciado: Hay E estudiantes que rinden un examen final y  un profesor que cuando todos los estudiantes han llegado les entrega el enunciado. Luego el profesor va corrigiendo los examenes y enviando la nota de acuerdo con orden en que se van entregando. Cada alumno realiza el examen, lo entrega y espera a que el profesor le indique la nota. Nota: Maximizar concurrencia; No realizar busy waiting, todos los procesos deben terminar.
+
+chan llegada();
+chan examenes[E](text);
+cahn entrega(text. int);
+chan res[E](int);
+
+process Estudiante[id: 0..E-1]
+{
+    text examen;
+    int res;
+
+    send llegada();
+    receive examenes[id](examen);
+
+    examen = resolver(examen);
+
+    send entrega(examen, id);
+    receive resultado[id](res);
+}
+
+process Profesor
+{
+
+    text examen = generarExamen();
+    text examAux;
+    int res;
+
+    for i: 1 to E do
+    {
+        receive llegada();
+    }
+
+    //Entrega examenes
+    for i: 1 to E do
+    {
+        send examenes[i](examen);
+    }
+
+    //Corrige examenes
+    for i: 1 to E do
+    {
+        receive entrega(examAux, idEst);
+        res = corregir(examAux);
+        send resultado[idEst](res);
+    }
+}
