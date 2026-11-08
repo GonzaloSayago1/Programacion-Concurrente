@@ -7,11 +7,42 @@ procedure Competencia is
     end Participante;
 
     task Coordinador is
-
+        entry solicitarProblema(problema: out text);
+        entry entrega(resolucion: in text; orden: out integer; resultado: out integer);
     end Coordinador;
 
     arrParticipantes: array (1..P) of Participante;
 
-begin
+    task body Participante is
+        problema, resolucion: text;
+        orden, resultado|: integer;
+    begin
+        Coordinador.solicitarProblema(problema);
 
+        resolucion = resolver(problema);
+
+        //Entrega su resolucion y espera correccion
+        Coordinador.entrega(resolucion, orden, resultado);
+    end Participante;
+
+    task body Coordinador is
+        orden: integer;
+    begin
+        orden:= 0;
+        for i in 1..(P*2) loop
+            SELECT
+                accept solicitarProblema(problema: out text) do
+                    problema:= generarProblema();
+                end solicitarProblema;
+            OR
+                accept entregar(resolucion: in text; ordenAux: out integer; resultado: out integer) do
+                    resultado:= corregir(resolucion);
+                    orden:= orden + 1;
+                end entrega;
+            end SELECT;
+        end loop;
+    end Coordinador;
+
+begin
+    null;
 end Competencia;
