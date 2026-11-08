@@ -86,4 +86,43 @@ process Administrador
 
 
 
-//Enunciado:
+//Enunciado: En una oficina existen 100 empleados que envian documentos para imprimir en 5 impresoras compartidas. Los pedidos de impresion son procesados en orden de llegada y se asignan a la primera impresora que se encuentre libre.
+
+process Empleado[id: 1..E]
+{
+    tetx documento;
+
+    while(true)
+    {
+        documento = generarDocumento;
+        Administrador!solicitud();
+    }
+}
+
+process Administrador
+{
+    text doc;
+    int idImp;
+    cola colaDocumentos;
+
+    while true(true)
+    {
+        do Empleado[*]?solicitud(doc) ->
+            push(colaDocumentos, doc);
+        [] (not empty(colaDocumentos)); Impresora[*]?pedidos(idImp) ->
+            pop(colaDocumentos, doc);
+            Impresora[idImp]!impresiones(doc);
+        od
+    }
+}
+
+process Impresora[id: 1..5]
+{
+    text doc;
+    while(true)
+    {
+        Administrador!pedidos(id);
+        Administrador?impresiones(doc);
+        imprimir(doc);
+    }
+}

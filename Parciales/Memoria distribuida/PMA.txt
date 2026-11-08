@@ -45,3 +45,29 @@ process Profesor
         send resultado[idEst](res);
     }
 }
+
+
+
+Enunciado: En una oficina existen 100 empleados que envian documentos para imprimir en 5 impresoras compartidas. Los pedidos de impresion son procesados en orden de llegada y se asignan a la primera impresora que se encuentre libre.
+
+chan pedidos(text);
+
+process Empleado[id: 1..100]
+{
+    text documento;
+    while(true)
+    {
+        documento = generarDocumento;
+        send pedidos(documento);
+    }
+}
+
+process impresora[id: 1..5]
+{
+    text doc;
+    while(true)
+    {
+        receive pedidos(doc);
+        imprimir(doc);
+    }
+}
