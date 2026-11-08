@@ -1,0 +1,17 @@
+//Enunciado: En una competencia de programadores hay P participantes y un coordinador. El coordinador entrega el problema a resover a los participantes y recibe las resoluciones para corregir. Cada participante debe conocer el resultado de su trabajo y el orden en que entregó su resolución. Nota: Maximizar la concurrencia.
+
+procedure Competencia is
+
+    task type Participante is
+        entrys
+    end Participante;
+
+    task Coordinador is
+
+    end Coordinador;
+
+    arrParticipantes: array (1..P) of Participante;
+
+begin
+
+end Competencia;

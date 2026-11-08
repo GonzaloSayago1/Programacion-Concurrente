@@ -83,3 +83,7 @@ process Administrador
         Medico!atencion(idPaciente);|
     od
 }
+
+
+
+//Enunciado:
