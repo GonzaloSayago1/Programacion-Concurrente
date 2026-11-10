@@ -104,3 +104,7 @@ process Empleado[id: 0..2]
         send entrega[idCliente](paquete);
     }
 }
+
+
+//Enunciado: En un estadio de fútbol se dará un recital al que asistirán P personas. Para ello, cada asistente debe retirar su entrada por alguna de las 5 boleterías del estadio presentando su DNI (cada persona retira una única entrada). Los asistentes son atendidos por orden de llegada por alguno de los 5 empleados del club (cada uno atiende una boletería). Implemente una solución considerando que los empleados realizan tareas administrativas por 15 minutos cuando no hay asistentes para atender. Notas: cada persona conoce su DNI; existe la función obtenerEntrada(DNI) que le retorna al empleado la entrada para el DNI provisto por argumento; existe la función realizarTareasAdmin() que representa las tareas administrativas que el empleado realizad por 15 minutos.
+

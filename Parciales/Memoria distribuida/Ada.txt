@@ -101,3 +101,13 @@ procedure Farmacia is
 begin
     null;
 end Farmacia;
+
+
+Enunciado: En un aeropuerto hay una mesa de informes que atiende las consultas de los pasajeros. Existen P pasajeros que consultan una única vez, cada uno con una prioridad diferente: Los pasajeros con vuelos inmediatos tienen una tienen prioridad sobre los que viajan más tarde; mientras que los pasajeros con movilidad reducida tienen prioridad sobre todos los demás. Cada pasajero entrega su código de vuelo al empleado de informes, quien responde con la puerta de embarque y la hora es estimada de salida. Notas: Cada pasajero obtiene su prioridad mediante la función obtenerPrioridad(), que retorna 0 para movilidad reducida, 1 para los vuelos inmediatos y 2 para el resto; mientras que la función obtenerVuelo() le retorna el código de vuelo. El empleado dispone de las funciones obtenerPuerta(vuelo) y obtenerHora(vuelo) que retornan la información de salida para el vuelo recibido. El empleado de informes atiende un pasajero por vez, según la prioridad indicada. Todas las tareas deben finalizar.
+
+
+Enunciado: Se desea modelar un sistema de recomendaciones para una plataforma de comercio electrónico. El sistema cuenta con 10 motores de recomendación, cada uno de ellos implementando un algoritmo distinto y operando sobre su propio conjunto de datos. Además, existe un Coordinador que genera solicitudes de recomendación y las procesa
+de manera indefinida. Cada vez que el coordinador genera una solicitud, la envía en paralelo a los 10 motores.
+Cada motor, al recibir la solicitud, ejecuta la función Recomendar(solicitud, producto, puntaje), la cual retorna el
+producto recomendado para la solicitud ingresada y un puntaje numérico (de 0 a 100) que indica la relevancia de la recomendación generada. Cuando los 10 motores terminan, el Coordinador debe seleccionar el producto cuya recomendación tenga el mayor puntaje entre todas las recibidas. Luego de decidir la recomendación final, el
+Coordinador continúa inmediatamente procesando la siguiente solicitud. Notas: maximizar concurrencia; la función generarSolicitud() genera la siguiente solicitud que se debe procesar; considere que la función Recomendar utilizada por los motores tarda un tiempo considerable.
