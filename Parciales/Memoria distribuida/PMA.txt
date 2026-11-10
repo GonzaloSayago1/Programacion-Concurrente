@@ -71,3 +71,36 @@ process impresora[id: 1..5]
         imprimir(doc);
     }
 }
+
+
+Enunciado: Las unidades postales (UP) son sucursales de correo que se ocupan habitualmente de recibir y entregar paquetes. En particular, la UP 16 solo se ocupa de entregar paquetes a las personas que se presentan a retirarlos. Los clientes son atendidos por orden de llegada por el primer empleado que se encuentra libre. Al solicitar atencion, el cliente le muestra el código QR al empleado que lo atiende, el cual le entrega el paquete como respuesta. Implemente una solución asumiendo que hay N clientes que retira un único paquete y 3 empleados para atenderlos. Además, asuma que no habrá códigos de QR erróneos ni paquetes faltantes. Notas: La función obtenerQR(idCliente) retorna el código QR asociado al identificador de cliente recibido como entrada. De forma similar, obtenerPaquete(qr) retorna el paquete asociado ak QR recibido como entrada.
+
+chan solicitudes(int, text);
+chan entrega[N](text);
+
+process Cliente[id: 0..N-1]
+{
+    int idEmpleado;
+    text qr = obtenerQR(id); //Asumo que el QR es un text
+    text paquete;
+
+    //Solicita retirar paquete
+    send solicitudes(id, qr);
+
+    //Recibe paquete
+    receive entrega(paquete);
+}
+
+process Empleado[id: 0..2]
+{
+    int idCliente;
+    text qr, paquete;
+    while(true)
+    {
+        receive solicitudes(idCliente, qr);
+
+        paquete = obtenerPaquete(qr);
+
+        send entrega[idCliente](paquete);
+    }
+}
