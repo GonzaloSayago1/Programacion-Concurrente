@@ -1,77 +1,58 @@
 chan avisos(boolean);
-chan solicitudes(int, int, boolean);
-chan termino(boolean)
-chan acceso[P](boolean);
+chan atencionEmbarazada(text, real, int);
+chan atencionMenosBoletas(text, real, int);
+chan atencionGeneral(text, real, int);
+chan atencion[P](real, text); //Asumo que va de 1 a P
 
 process Persona[id: 1..P]
 {
     int cantidadBoletas = determinarCantidad();
-    boolean esJubilado = determinarJubilacion();
-    boolean ok;
+    boolean esEmbaradaza;
+    text boleta, recibo;
+    real pago, vuelto;
 
-    //Solicita acceso a la caja
+    pago = determinarPago(boleta);
+
+    if(esEmbaradaza){
+        send atencionEmbarazada(boleta, pago, id);
+    }
+    else if(cantidadBoletas < 5) {
+        send atencionMenosBoletas(boleta, pago, id);
+    }
+    else {
+        send atencionGeneral(boleta, pago, id);
+    }
+
+    //Avisa que hay algo esperando
     send avisos(true);
-    send solicitudes(id, cantidadBoletas, esJubilado);
 
-    //Recibe acceso
-    receive acceso[id](ok);
-    usarCaja();
-
-    //Avisa que termino
-    send avisos(true);
-    send termino(true);
+    //Espera atencion
+    receive atencion[id](vuelto, recibo);
 }
 
 process Administrador
 {
-    int idPersona, cantidadBoletas, esperando, sig;
-    boolean jubilado, ok;
-    boolean libre = true;
-    cola colaEspera, colaBoletas, colaJubilado;
+    text boleta, recibo;
+    real pagoRecibido, vuelto;
+    int idPersona;
 
-    esperando = 0;
-
-    for i: 1 to (P * 2) do
+    while (true)
     {
         receive avisos(ok);
 
-        if(not empty(solicitudes)) ->
-            receive solicitudes(idPersona, cantidadBoletas, jubilado);
-            if(libre){
-                libre = false;
-                send acceso[idPersona](true);
-            }
-            else {
-                esperando++;
-                if(jubilado){
-                    push(colaJubilado, idPersona);
-                }
-                else if(cantidadBoletas < 5){
-                    push(colaBoletas, idPersona);
-                }
-                else {
-                    push(colaEspera, idPersona);
-                }
-            }
-        [] (not empty(termino)) ->
-            receive termino(ok);
-            if(esperando > 0){
-                if(not empty(colaJubilado)){
-                    pop(colaJubilado, sig);
-                }
-                else if(not empty(colaBoletas)){
-                    pop(colaBoletas, sig);
-                }
-                else {
-                    pop(colaEspera, sig);
-                }
+        if(not empty(atencionEmbarazada)){
+            receive atencionEmbarazada(boleta, pagoRecibido, idPersona);
+        }
+        else if(not empty(atencionMenosBoletas)){
+            receive atencionMenosBoletas(boleta, pagoRecibido, idPersona);
+        }
+        else{
+            receive atencionGeneral(boleta, pagoRecibido, idPersona);
+        }
 
-                esperando--;
-                send acceso[sig](true);
-            }
-            else {
-                //Libera caja
-                libre = true;
-            }
+        vuelto = determinarVuelto(boleta, pagoRecibido);
+        recibo = generarRecibo(boleta);
+
+        send atencion[idPersona](vuelto, recibo);
     }
 }

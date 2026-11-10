@@ -1,84 +1,59 @@
 procedure Negocio is
-    Task type Persona is
-        Entry identificador(id: in integer);
-        Entry darAcceso;
-    end Persona;
+    Task type Persona;
 
     Task Administrador is
-        Entry solicitarPago();
-        Entry termino;
+        Entry atencionAncianos(boleta: in text; pago: in float; vuelto: out float; rec: our text);
+        Entry atencionMenosBoletas(boleta: in text; pago: in float; vuelto: out float; rec: our text);
+        Entry atencionGeneral(boleta: in text; pago: in float; vuelto: out float; rec: our text);
     end Administrador;
 
     arrPersonas: array (1..P) of Persona;
 
     Task body Persona is
-        cantBoletas, id: integer;
+        cantBoletas: integer;
         esJubilado: boolean;
+        boleta: text; //Asumo que esta inicializado
+        pago, vuelto: float;
+        recibo: text;
     begin
         cantBoletas:= determinarCantidad();
         esJubilado:= determinarSiEsJubilado();
 
-        accept identificador(pos: in integer) do
-            id:= pos;
-        end identificador;
-
-        Administrador.solicitarPago(id, cantBoletas, esJubilado);
-
-        //Espera que el administrador le de acceso a la caja
-        accept darAcceso;
-        //Usa caja
-
-        //Avisa que termino de usarla
-        Administrador.termino;
+        if(esJubilado)
+            Administrador.atencionAncianos(boleta, pago, vuelto, recibo);
+        elseif(catBoletas < 5)
+            Administrador.atencionGeneral(boleta, pago, vuelto, recibo);
+        else
+            Administrador.atencionGeneral(boleta, pago, vuelto, recibo);
+        end if;
     end Persona;
 
     Task body Administrador is
-        cajaLibre: boolean := true;
-        esperando: integer := 0;
-        sig: integer;
-        colaEspera, colaMenosBoletas, colaJubilados: cola;
+        montoBoleta: float;
     begin
         for i in 1..P loop
             SELECT
-                accept solicitarPago(id: in integer; cantBoletas: in integer; jubilado: in boolean) do
-                    if(cajaLibre)
-                        cajaLibre:= false;
-                        arrPersonas(i).darAcceso;
-                    else
-                        esperando:= esperando + 1;
-                        if(jubilado)
-                            push(colaJubilados, id);
-                        else if (cantBoletas < 5)
-                            push(colaMenosBoletas, id);
-                        else
-                            push(colaEspera, id);
-                        end if;
-                    end if;
-                end solicitarPago;
-            OR
-                accept termino do
-                    if(esperando > 0)
-
-                        if(colaJubilados.size() > 0)
-                            sig:= pop(colaJubilados);
-                        else if(colaMenosBoletas.size() > 0)
-                            sig:= pop(colaMenosBoletas);
-                        else
-                            sig:= pop(colaEspera);
-                        end if;
-
-                        //Da el paso a la siguiente persona
-                        arrPersonas(i).darAcceso;
-                        esperando:= esperando - 1;
-                    else
-                        cajaLibre:= true;
-                    end if;
-                end termino;
+                accept atencionAncianos(boleta: in text; pago: in float; vuelto: out float; rec: out text) do
+                    rec := generarRecibo(boleta);
+                    montoBoleta := obtenerMonto(boleta);
+                    vuelto := pago - montoBoleta; //Asumo que no van a dar menos plata que el monto de la boleta
+                end atencionAncianos;
+            OR when (atencionAncianos'count = 0) =>
+                acccept atencionMenosBoletas(boleta: in text; pago: in float; vuelto: out float; rec: out text) do
+                    rec := generarRecibo(boleta);
+                    montoBoleta := obtenerMonto(boleta);
+                    vuelto := pago - montoBoleta; //Asumo que no van a dar menos plata que el monto de la boleta
+                end atencionMenosBoletas;
+            OR when (atencionAncianos'count = 0) AND (atencionMenosBoletas'count = 0)
+                accept atencionGeneral(boleta: in text; pago: in float; vuelto: out float; rec: out text) do
+                    rec := generarRecibo(boleta);
+                    montoBoleta := obtenerMonto(boleta);
+                    vuelto := pago - montoBoleta; //Asumo que no van a dar menos plata que el monto de la boleta
+                end atencionGeneral;
             end SELECT;
         end loop;
     end Administrador;
+
 begin
-    for i in 1..P loop
-        arrPersonas(i).identificador(i);
-    end loop;
+    null;
 end Negocio;
