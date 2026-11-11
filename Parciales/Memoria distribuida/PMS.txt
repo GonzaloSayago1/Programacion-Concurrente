@@ -169,3 +169,102 @@ process Administrador
         Empleado[idEmpleado]!trabajo(qr, idCliente);
     od
 }
+
+
+Enunciado: En un gimnasio hay una bicicleta de alta gama (que sólo puede ser usada por una persona a la vez) y un entrenador que controla su uso. También hay P deportistas que deben usar la bicicleta una única vez. Implemente una solución usando PMS considerando que el entrenador da acceso según el orden de llegada.
+
+process Deportista[id: 1..P]
+{
+
+}
+
+process Entrenador
+{
+    bool bicicletaLibre = true;
+    int cantidad = 0;
+    cola colaEspera;
+    int idDepor, sig;
+    int esperando = 0;
+
+    do (cantidad < P); Deportista[*]?solicitudUso(idDepor) ->
+        if(bicicletaLibre){
+            bicicletaLibre = false;
+            Deportista[idDepor]!acceso();
+        }
+        else {
+            push(colaEspera, id);
+            esperando++;
+        }
+    [] (cantidad < P); Deportista[*]?finalizacion() ->
+        if(esperando > 0){
+            esperando--;
+            pop(colaEspera, sig);
+            Deportista[sig]!acceso();
+        }
+        else {
+            bicicletaLibre = true;
+        }
+        cantidad++;
+    od
+}
+
+Enunciado: En un torneo de programación hay 1 organizador, N competidores y S supervisores. El organizador comunica el desafío a resolver a cada competidor. Cuando un competidor cuenta con el desafío a resolver, lo hace y lo entrega para ser evaluado. A continuación, espera a que alguno de los supervisores lo corrija y le indique si está bien. En caso de tener errores, el competidor debe corregirlo y volver a entregar, repitiendo la misma metodología hasta que llegue a la solución esperada. Los supervisores corrigen las entregas respetando el orden en que los competidores van entregando. Nota: maximizar la concurrencia y no generar demora innecesaria.
+
+process Organizador
+{
+    text desafio = generarDesafio; //Asumo que es el mismo para todos
+    int idComp;
+
+    for i:= 1..N do
+    {
+        Competidor[*]?solicitarDesafio(idComp);
+        Competidor[idComp]!recibirDesafio(desafio);
+    }
+}
+
+process Competidor[id: 1..N]
+{
+    bool aprobado = false;
+    bool res;
+    text des, entrega;
+
+    Organizador!solicitarDesafio(id);
+    Organizador[id]?recibirDesafio(des);
+
+    while(not aprobado)
+    {
+        entrega = resolver(des);
+        Administrador!entregas(entrega, id);
+        Supervisor[id]?respuestas(res);
+        aprobado = res;
+    }
+}
+
+process Supervisor[id: 1..S]
+{
+    int idComp;
+    text entrega;
+    bool resultado;
+
+    while(true)
+    {
+        Administrador!solicitudTrabajo(id);
+        Administrador[id]?asignacionTrabajo(entrega, idComp);
+        resultado = corregir(entrega);
+        Competidor[idComp]!respuestas(resultado);
+    }
+}
+
+process Administrador
+{
+    int idComp, idSup;
+    text entrega;
+    cola colaEspera;
+
+    do Competidor[*]?entregas(entrega, idComp) ->
+        push(colaEspera, (entrega, idComp));
+    [] (not empty(colaEspera)); Supervisor[*]? solicitudTrabajo(idSup) ->
+        pop(colaEspera, (entrega, idComp));
+        Supervisor[idSup]!asignacionTrabajo(entrega, idComp);
+    od
+}

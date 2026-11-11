@@ -230,3 +230,54 @@ procedure Sistema is
 begin
     null;
 end Sistema;
+
+
+Enunciado: Una empresa de venta de calzado cuenta con S sedes. En la oficina central de la empresa se utiliza un sistema que permite controlar el stock de los diferentes modelos, ya que cada sede tiene una base de datos propia. El sistema de control de stock funciona de la siguiente manera: dado un modelo determinado, lo envía a las sedes para que cada una le devuelva la cantidad disponible en ellas; al final del procesamiento, el sistema informa el total de calzados disponibles de dicho modelo. Una vez que se completó el procesamiento de un modelo, se procede a realizar lo mismo con el siguiente modelo. Nota: suponga que existe una función DevolverStock(modelo,cantidad) que utiliza cada sede donde recibe como parámetro de entrada el modelo de calzado y retorna como parámetro de salida la cantidad de pares disponibles. Maximizar la concurrencia y no generar demora innecesaria.
+
+procedure Empresa is
+    task type Sede;
+
+    task Control is
+        Entry pedirModelo(modelo: out text);
+        Entry darResultado(res: in integer);
+    end Control;
+
+    arrSedes: array(1..S) of Sede;
+
+    task body Sede is
+        modelo: text;
+        cantidad: integer;
+    begin
+        loop
+            Control.pedirModelo(modelo);
+            DevolverStock(modelo, cantidad);
+            Control.darResultado(cantidad);
+        end loop;
+    end Sede;
+
+    task body Control is
+        total: integer;
+        modelo: text;
+    begin
+        loop
+            total:= 0;
+            modelo:= obtenerModelo();
+
+            for i in 1..S loop
+                accept pedirModelo(mod: out text) do
+                    mod:= modelo;
+                end pedirModelo;
+            end loop;
+
+            for i in 1..S loop
+                accept darResultado(cantidad: in integer) do
+                    total:= total + cantidad;
+                end darResultado;
+            end loop;
+
+            informar(total);
+        end loop;
+    end Control;
+begin
+    null;
+end Empresa;

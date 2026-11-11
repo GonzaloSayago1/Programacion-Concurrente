@@ -161,3 +161,63 @@ process Administrador
         send trabajo[idEmpleado](idPersona, dni);
     }
 }
+
+
+Enunciado: Se debe modelar el funcionamiento de una casa de venta de repuestos automotores, en la que trabajan V vendedores y que debe atender a C clientes. El modelado debe considerar que:
+(a) cada cliente realiza un pedido y luego espera a que se lo entreguen;
+(b) los pedidos que hacen los clientes son tomados por cualquiera de los vendedores. Cuando no hay pedidos para atender, los vendedores aprovechan para controlar el stock de los repuestos (tardan entre 2 y 4 minutos para hacer esto).
+Nota: maximizar la concurrencia.
+
+chan solicitudPedido(int, text);
+chan entregas[C](text); //Asumo que va de 1 a C
+chan pedidos(int);
+chan asignacionTrabajo(int, text);
+
+process Cliente[id: 1..C]
+{
+    text pedido, repuestos;
+
+    send solicitudPedido(id, pedido);
+    receive entregas[id](repuestos);
+}
+
+process Vendedores[id: 1..V]
+{
+    int idCliente;
+    text pedido, repuestos;
+
+    while(true)
+    {
+        send pedidos(id);
+        receive asignacionTrabajo[id](idCliente, pedido);
+
+        if(idCliente <> -1){
+            repuestos:= atenderPedido(pedido);
+            send entregas[idCliente](repuestos);
+        }
+        else {
+            ControlarStrock(); //Tarda entre 2 y 4 minutos (asumo que existe esta funcion)
+        }
+    }
+}
+
+process Administrador
+{
+    int idCliente, idVendedor;
+    text pedido;
+
+    while(true)
+    {
+        receive pedidos(idVendedor);
+        if(empty(solicitudPedido)){
+            idCliente = -1;
+            pedido = "";
+        }
+        else {
+            receive solicitudPedido(idCliente, pedido);
+        }
+
+        //Asigna trabajo
+        send asignacionTrabajo[idVendedor](idCliente, pedido);
+    }
+}
