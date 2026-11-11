@@ -108,3 +108,56 @@ process Empleado[id: 0..2]
 
 //Enunciado: En un estadio de fútbol se dará un recital al que asistirán P personas. Para ello, cada asistente debe retirar su entrada por alguna de las 5 boleterías del estadio presentando su DNI (cada persona retira una única entrada). Los asistentes son atendidos por orden de llegada por alguno de los 5 empleados del club (cada uno atiende una boletería). Implemente una solución considerando que los empleados realizan tareas administrativas por 15 minutos cuando no hay asistentes para atender. Notas: cada persona conoce su DNI; existe la función obtenerEntrada(DNI) que le retorna al empleado la entrada para el DNI provisto por argumento; existe la función realizarTareasAdmin() que representa las tareas administrativas que el empleado realizad por 15 minutos.
 
+chan pedirEntrada(text, int, int);
+chan entradas[P](text); //Asumo que va de 1 a P
+chan solicitud(int);
+chan trabajo[5](int, int); //Asumo que va de 1 a 5
+
+process Persona[id: 1..P]
+{
+    int dni;
+    text entrada;
+
+    send pedirEntrada(text, id, dni);
+
+    receive entradas[id](entrada);
+}
+
+
+process Empleado[id: 1..5]
+{
+    int idPersona, dni;
+    text entrada;
+
+    while(true)
+    {
+        send solicitud(id);
+        receive trabajo[id](idPersona, dni);
+        if(idPersona <> -1){
+                entrada = obtenerEntrada(dni);
+                send entradas[idPersona](entrada);
+        }
+        else {
+            realizarTareasAdmin(); //Tarda 15 mins
+        }
+    }
+}
+
+process Administrador
+{
+    int idEmpleado, idPersona, dni;
+
+    while(true)
+    {
+        receive solicitud(idEmpleado);
+        if(empty(pedirEntrada)){
+            idPersona = -1;
+            dni = -1;
+        }
+        else {
+            receive pedirEntrada(idPesona, dni);
+        }
+
+        send trabajo[idEmpleado](idPersona, dni);
+    }
+}

@@ -105,9 +105,128 @@ end Farmacia;
 
 Enunciado: En un aeropuerto hay una mesa de informes que atiende las consultas de los pasajeros. Existen P pasajeros que consultan una única vez, cada uno con una prioridad diferente: Los pasajeros con vuelos inmediatos tienen una tienen prioridad sobre los que viajan más tarde; mientras que los pasajeros con movilidad reducida tienen prioridad sobre todos los demás. Cada pasajero entrega su código de vuelo al empleado de informes, quien responde con la puerta de embarque y la hora es estimada de salida. Notas: Cada pasajero obtiene su prioridad mediante la función obtenerPrioridad(), que retorna 0 para movilidad reducida, 1 para los vuelos inmediatos y 2 para el resto; mientras que la función obtenerVuelo() le retorna el código de vuelo. El empleado dispone de las funciones obtenerPuerta(vuelo) y obtenerHora(vuelo) que retornan la información de salida para el vuelo recibido. El empleado de informes atiende un pasajero por vez, según la prioridad indicada. Todas las tareas deben finalizar.
 
+procedure Aeropuerto is
+    task type Pasajero;
 
-Enunciado: Se desea modelar un sistema de recomendaciones para una plataforma de comercio electrónico. El sistema cuenta con 10 motores de recomendación, cada uno de ellos implementando un algoritmo distinto y operando sobre su propio conjunto de datos. Además, existe un Coordinador que genera solicitudes de recomendación y las procesa
-de manera indefinida. Cada vez que el coordinador genera una solicitud, la envía en paralelo a los 10 motores.
-Cada motor, al recibir la solicitud, ejecuta la función Recomendar(solicitud, producto, puntaje), la cual retorna el
-producto recomendado para la solicitud ingresada y un puntaje numérico (de 0 a 100) que indica la relevancia de la recomendación generada. Cuando los 10 motores terminan, el Coordinador debe seleccionar el producto cuya recomendación tenga el mayor puntaje entre todas las recibidas. Luego de decidir la recomendación final, el
-Coordinador continúa inmediatamente procesando la siguiente solicitud. Notas: maximizar concurrencia; la función generarSolicitud() genera la siguiente solicitud que se debe procesar; considere que la función Recomendar utilizada por los motores tarda un tiempo considerable.
+    task Empleado is
+        Entry atencionMovilidad(cod: in integer; puerta: out integer; hora: out text);
+        Entry atencionInmediata(cod: in integer; puerta: out integer; hora: out text);
+        Entry atencionGeneral(cod: in integer; puerta: out integer; hora: out text);
+    end Empleado;
+
+    arrPasajero: array(1..N) of Pasajero;
+
+    task body Pasajero is
+        prioridad, codigo, puerta: integer;
+        hora: text;
+    begin
+        prioridad := obtenerPrioridad();
+        codigo := obtenerCodigo;
+
+        if(prioridad = 0){
+            Empleado.atencionMovilidad(codigo, puerta, hora);
+        }
+        elseif(prioridad = 1){
+            Empleado.atencionInmediata(codigo, puerta, hora);
+        }
+        else{
+            Empleado.atencionGeneral(codigo, puerta, hora);
+        }
+        end if;
+    end Pasajero;
+
+    Task body Empleado is
+    begin
+        for i in 1..N loop
+            SELECT
+                accept atencionMovilidad(cod: in integer; puerta: out integer; hora: out text) do
+                    puerta := obtenerPuerta(cod);
+                    hora := obtenerHora(cod);
+                end atencionMovilidad;
+            OR
+                accept atencionInmediata(cod: in integer; puerta: out integer; hora: out text) do
+                    puerta := obtenerPuerta(cod);
+                    hora := obtenerHora(cod);
+                end atencionMovilidad;
+            OR
+                accept atencionGeneral(cod: in integer; puerta: out integer; hora: out text) do
+                    puerta := obtenerPuerta(cod);
+                    hora := obtenerHora(cod);
+                end atencionMovilidad;
+            end SELECT;
+        end loop;
+    end Empleado;
+begin
+    null;
+end Aeropuerto;
+
+Enunciado: Se desea modelar un sistema de recomendaciones para una plataforma de comercio electrónico. El sistema cuenta con 10 motores de recomendación, cada uno de ellos implementando un algoritmo distinto y operando sobre su propio conjunto de datos. Además, existe un Coordinador que genera solicitudes de recomendación y las procesa de manera indefinida. Cada vez que el coordinador genera una solicitud, la envía en paralelo a los 10 motores. Cada motor, al recibir la solicitud, ejecuta la función Recomendar(solicitud, producto, puntaje), la cual retorna el producto recomendado para la solicitud ingresada y un puntaje numérico (de 0 a 100) que indica la relevancia de la recomendación generada. Cuando los 10 motores terminan, el Coordinador debe seleccionar el producto cuya recomendación tenga el mayor puntaje entre todas las recibidas. Luego de decidir la recomendación final, el Coordinador continúa inmediatamente procesando la siguiente solicitud. Notas: maximizar concurrencia; la función generarSolicitud() genera la siguiente solicitud que se debe procesar; considere que la función Recomendar utilizada por los motores tarda un tiempo considerable.
+
+
+procedure Sistema is
+
+    task type Motor;
+
+    task Coordinador is
+        Entry pedirSolicitud(solicitud: out text);
+        Entry enviarResultados(producto: in text; puntaje: in integer);
+        Entry siguiente;
+    end Coordinador;
+
+    arrMotor: array (1..10) of Motor;
+
+    task body Motor is
+        solicitud, producto: text;
+        puntaje: integer;
+    begin
+        loop
+            //Pide solicitud
+            Coordinador.pedirSolicitud(solicitud);
+
+            //Realiza operaciones
+            puntaje:= obtenerPuntaje(solicitud);
+            producto:= obtenerProducto(solicitud);
+
+            //Envia resultados
+            Coordinador.enviarResultados(producto, puntaje);
+            Coordinador.siguiente;
+        end loop;
+    end Motor;
+
+    task body Coordinador is
+        solicitud, productoMax: text;
+        max: integer;
+    begin
+        loop
+            max:= -1;
+            solicitud := generarSolicitud();
+            for i in 1..10 loop
+                accept pedirSolicitud(soli: out text) do
+                    solicitud := soli;
+                end pedirSolicitud;
+            end loop;
+
+            //Recibe las respuestas de las solicitudes
+            for i in 1..10 loop
+                accept enviarResultados(producto: in text; puntaje: in integer) do
+                    if(puntaje > max)
+                        max := puntaje;
+                        productoMax:= producto;
+                    end if;
+                end enviarResultados;
+            end loop;
+
+            //Avanza con la siguinete recomendacion
+            for i in 1..10 loop
+                accept siguiente;
+            end loop;
+
+            //Informa el producto maximo
+            informar(productoMax);
+
+        end loop;
+    end Coordinador;
+
+begin
+    null;
+end Sistema;
